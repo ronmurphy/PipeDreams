@@ -150,33 +150,34 @@
         }
 
         .solution-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;  /* Make sure it's above the grid */
+}
 
-        .solution-path {
-            fill: none;
-            stroke: #ffeb3b;
-            stroke-width: 8;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.5));
-        }
+.solution-path {
+    fill: none;
+    stroke: #ffeb3b;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.5));
+}
 
-        @keyframes flowAnimation {
-            0% {
-                stroke: #4CAF50;
-                stroke-dashoffset: 1000;
-            }
-            100% {
-                stroke: #2196F3;
-                stroke-dashoffset: 0;
-            }
-        }
+@keyframes flowAnimation {
+    0% {
+        stroke: #4CAF50;
+        stroke-dashoffset: var(--path-length);
+    }
+    100% {
+        stroke: #2196F3;
+        stroke-dashoffset: 0;
+    }
+}
 
         .flowing {
             stroke-dasharray: 1000;
@@ -968,9 +969,13 @@ function animateFlow(path) {
     const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     overlay.classList.add('solution-overlay');
     
+    // Calculate cell size
     const cellSize = container.querySelector('.cell').offsetWidth;
     overlay.setAttribute('viewBox', `0 0 ${GRID_WIDTH * cellSize} ${GRID_HEIGHT * cellSize}`);
+    overlay.style.width = `${GRID_WIDTH * cellSize}px`;
+    overlay.style.height = `${GRID_HEIGHT * cellSize}px`;
     
+    // Create the path data
     let pathData = '';
     path.forEach((pos, index) => {
         const x = pos.x * cellSize + cellSize/2;
@@ -982,16 +987,14 @@ function animateFlow(path) {
     flowPath.setAttribute('d', pathData);
     flowPath.classList.add('solution-path');
     
-    // Calculate path length for stroke-dasharray
+    // Set up the animation
     const pathLength = flowPath.getTotalLength ? flowPath.getTotalLength() : 1000;
-    flowPath.style.strokeDasharray = pathLength;
-    flowPath.style.strokeDashoffset = pathLength;
+    overlay.style.setProperty('--path-length', pathLength);
     
-    // Set animation duration dynamically
+    // Calculate dynamic duration based on grid size
     const duration = getFlowAnimationDuration();
-    flowPath.style.animation = `flowAnimation ${duration}s ease-out forwards`;
     
-    // Update the @keyframes animation
+    // Add animation styles
     const style = document.createElement('style');
     style.textContent = `
         @keyframes flowAnimation {
@@ -1007,6 +1010,10 @@ function animateFlow(path) {
     `;
     document.head.appendChild(style);
     
+    flowPath.style.strokeDasharray = pathLength;
+    flowPath.style.strokeDashoffset = pathLength;
+    flowPath.style.animation = `flowAnimation ${duration}s ease-out forwards`;
+    
     overlay.appendChild(flowPath);
     container.appendChild(overlay);
     
@@ -1014,93 +1021,133 @@ function animateFlow(path) {
         flowPath.addEventListener('animationend', () => {
             setTimeout(() => {
                 overlay.remove();
-                style.remove();  // Clean up the dynamic style
+                style.remove();
                 resolve();
             }, 500);
         });
     });
 }
 
+// async function checkSolution() {
+//     console.log("Checking solution...");
+    
+//     // Create a direct path without backtracking
+//     let path = [];
+//     const seen = new Set();
+    
+//     // Add start position
+//     path.push(startPos);
+//     seen.add(`${startPos.x},${startPos.y}`);
+    
+//     // Add each solution point, but only if we haven't seen it before
+//     for (let pipe of solution) {
+//         const key = `${pipe.x},${pipe.y}`;
+//         if (!seen.has(key)) {
+//             path.push({x: pipe.x, y: pipe.y});
+//             seen.add(key);
+//         }
+//     }
+    
+//     // Add end position if not already included
+//     const endKey = `${endPos.x},${endPos.y}`;
+//     if (!seen.has(endKey)) {
+//         path.push(endPos);
+//     }
+
+//     console.log("Checking path:", path.map(pos => `(${pos.x},${pos.y})`));
+    
+//     let isValid = true;
+//     for (let i = 0; i < path.length - 1; i++) {
+//         const current = path[i];
+//         const next = path[i + 1];
+        
+//         const currentPipe = (current.x === startPos.x && current.y === startPos.y) ? 
+//             null : grid[current.y][current.x];
+//         const nextPipe = (next.x === endPos.x && next.y === endPos.y) ? 
+//             null : grid[next.y][next.x];
+            
+//         const dx = next.x - current.x;
+//         const dy = next.y - current.y;
+        
+//         // Skip connection check for start and end positions
+//         if ((current.x === startPos.x && current.y === startPos.y) ||
+//             (next.x === endPos.x && next.y === endPos.y)) {
+//             continue;
+//         }
+        
+//         // Check if pipes are properly connected
+//         if (!currentPipe || !nextPipe || !pipeConnects(currentPipe, nextPipe, dx, dy)) {
+//             console.log(`Failed connection at (${current.x},${current.y}) to (${next.x},${next.y})`);
+//             isValid = false;
+//             break;
+//         }
+//     }
+
+//     if (isValid) {
+//         await animateFlow(path);
+//         levelsCompleted++;
+//         showStarCelebration();
+        
+//         const modal = document.getElementById('completionModal');
+//         modal.style.display = 'block';
+        
+//         document.getElementById('nextLevelButton').onclick = () => {
+//     modal.style.display = 'none';
+    
+//     if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
+//         if (levelsCompleted % (LEVELS_PER_EXPANSION * 2) === 0) {
+//             GRID_WIDTH++;
+//         } else {
+//             GRID_HEIGHT++;
+//         }
+//         updateGridSize();
+//     }
+    
+//     currentLevel++;
+//     document.getElementById('levelInfo').textContent = `Level ${currentLevel}`;
+//     applyLevelColors();  // Add this line
+//     initializeGrid();
+// };
+//     } else {
+//         alert("Not quite right. Keep trying!");
+//     }
+// }
+
 async function checkSolution() {
     console.log("Checking solution...");
     
-    // Create a direct path without backtracking
-    let path = [];
-    const seen = new Set();
+    const path = validatePipePath();
     
-    // Add start position
-    path.push(startPos);
-    seen.add(`${startPos.x},${startPos.y}`);
-    
-    // Add each solution point, but only if we haven't seen it before
-    for (let pipe of solution) {
-        const key = `${pipe.x},${pipe.y}`;
-        if (!seen.has(key)) {
-            path.push({x: pipe.x, y: pipe.y});
-            seen.add(key);
-        }
-    }
-    
-    // Add end position if not already included
-    const endKey = `${endPos.x},${endPos.y}`;
-    if (!seen.has(endKey)) {
-        path.push(endPos);
-    }
-
-    console.log("Checking path:", path.map(pos => `(${pos.x},${pos.y})`));
-    
-    let isValid = true;
-    for (let i = 0; i < path.length - 1; i++) {
-        const current = path[i];
-        const next = path[i + 1];
-        
-        const currentPipe = (current.x === startPos.x && current.y === startPos.y) ? 
-            null : grid[current.y][current.x];
-        const nextPipe = (next.x === endPos.x && next.y === endPos.y) ? 
-            null : grid[next.y][next.x];
-            
-        const dx = next.x - current.x;
-        const dy = next.y - current.y;
-        
-        // Skip connection check for start and end positions
-        if ((current.x === startPos.x && current.y === startPos.y) ||
-            (next.x === endPos.x && next.y === endPos.y)) {
-            continue;
-        }
-        
-        // Check if pipes are properly connected
-        if (!currentPipe || !nextPipe || !pipeConnects(currentPipe, nextPipe, dx, dy)) {
-            console.log(`Failed connection at (${current.x},${current.y}) to (${next.x},${next.y})`);
-            isValid = false;
-            break;
-        }
-    }
-
-    if (isValid) {
+    if (path) {
+        // Show the success animation
         await animateFlow(path);
+        
+        // Update game state
         levelsCompleted++;
         showStarCelebration();
         
+        // Show completion modal
         const modal = document.getElementById('completionModal');
         modal.style.display = 'block';
         
+        // Set up next level
         document.getElementById('nextLevelButton').onclick = () => {
-    modal.style.display = 'none';
-    
-    if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
-        if (levelsCompleted % (LEVELS_PER_EXPANSION * 2) === 0) {
-            GRID_WIDTH++;
-        } else {
-            GRID_HEIGHT++;
-        }
-        updateGridSize();
-    }
-    
-    currentLevel++;
-    document.getElementById('levelInfo').textContent = `Level ${currentLevel}`;
-    applyLevelColors();  // Add this line
-    initializeGrid();
-};
+            modal.style.display = 'none';
+            
+            if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
+                if (levelsCompleted % (LEVELS_PER_EXPANSION * 2) === 0) {
+                    GRID_WIDTH++;
+                } else {
+                    GRID_HEIGHT++;
+                }
+                updateGridSize();
+            }
+            
+            currentLevel++;
+            document.getElementById('levelInfo').textContent = `Level ${currentLevel}`;
+            applyLevelColors();
+            initializeGrid();
+        };
     } else {
         alert("Not quite right. Keep trying!");
     }
