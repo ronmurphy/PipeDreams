@@ -403,35 +403,59 @@ function showStarCelebration() {
     setTimeout(() => celebration.remove(), 2000);
 }
 
-        function updateGridDisplay() {
-            const gridElement = document.getElementById('grid');
-            gridElement.innerHTML = '';
+function updateGridDisplay() {
+    const gridElement = document.getElementById('grid');
+    gridElement.innerHTML = '';
+    
+    for (let y = 0; y < GRID_WIDTH; y++) {
+        for (let x = 0; x < GRID_HEIGHT; x++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
             
-            for (let y = 0; y < GRID_WIDTH; y++) {
-                for (let x = 0; x < GRID_HEIGHT; x++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
+            if (x === startPos.x && y === startPos.y) {
+                cell.classList.add('start');
+                cell.addEventListener('click', handleStartClick);
+            } else if (x === endPos.x && y === endPos.y) {
+                cell.classList.add('end');
+            } else {
+                const pipe = grid[y][x];
+                cell.appendChild(createSVGPipe(pipe.type, pipe.rotation));
+                
+                // Add both click and touch handlers
+                cell.addEventListener('click', () => rotatePipe(x, y));
+                
+                // New touch handling
+                let touchStartTime;
+                let hasMoved = false;
+                
+                cell.addEventListener('touchstart', (e) => {
+                    touchStartTime = new Date().getTime();
+                    hasMoved = false;
+                    handleTouchStart(e, x, y);
+                }, { passive: true });
+                
+                cell.addEventListener('touchmove', () => {
+                    hasMoved = true;
+                }, { passive: true });
+                
+                cell.addEventListener('touchend', (e) => {
+                    const touchEndTime = new Date().getTime();
+                    const touchDuration = touchEndTime - touchStartTime;
                     
-                    if (x === startPos.x && y === startPos.y) {
-                        cell.classList.add('start');
-                        cell.addEventListener('click', handleStartClick);
-                    } else if (x === endPos.x && y === endPos.y) {
-                        cell.classList.add('end');
+                    // If it was a quick tap without movement, rotate the pipe
+                    if (!hasMoved && touchDuration < 250) {
+                        e.preventDefault();
+                        rotatePipe(x, y);
                     } else {
-                        const pipe = grid[y][x];
-                        cell.appendChild(createSVGPipe(pipe.type, pipe.rotation));
-                        
-                        cell.addEventListener('click', () => rotatePipe(x, y));
-                        cell.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            handleTouchStart(e, x, y);
-                        });
+                        handleTouchEnd(e);
                     }
-                    
-                    gridElement.appendChild(cell);
-                }
+                });
             }
+            
+            gridElement.appendChild(cell);
         }
+    }
+}
 
         function createSVGPipe(type, rotation) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1126,30 +1150,33 @@ document.getElementById('startButton').addEventListener('click', () => {
 
         // Prevent default touch behavior
         document.addEventListener('touchmove', (e) => {
+    // Only prevent default if more than one touch point
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Update the double-tap prevention
+document.addEventListener('touchend', (function() {
+    let lastTap = 0;
+    return function(e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
             e.preventDefault();
-        }, { passive: false });
+        }
+        lastTap = currentTime;
+    };
+})());
 
 
  
                         let lastTouchEnd = 0;
 
-                        document.addEventListener('touchstart', function(e) {
-                            if (e.touches.length > 1) {
-                                e.preventDefault();
-                            }
-                        }, { passive: false });
 
-                        document.addEventListener('touchend', function(e) {
-                            const now = (new Date()).getTime();
-                            if (now - lastTouchEnd <= 300) {
-                                e.preventDefault();
-                            }
-                            lastTouchEnd = now;
-                        }, false);
-
-                        document.addEventListener('touchmove', function(e) {
-                            if (e.touches.length > 1) {
-                                e.preventDefault();
-                            }
-                        }, { passive: false });
+                        // document.addEventListener('touchmove', function(e) {
+                        //     if (e.touches.length > 1) {
+                        //         e.preventDefault();
+                        //     }
+                        // }, { passive: false });
                     </script></body></html>
