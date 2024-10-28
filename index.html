@@ -156,7 +156,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 10;  /* Make sure it's above the grid */
+    z-index: 10;
 }
 
 .solution-path {
@@ -168,21 +168,21 @@
     filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.5));
 }
 
+.flowing {
+    stroke-dasharray: 1000;
+    animation: flowAnimation 2s ease-out forwards;
+}
+
 @keyframes flowAnimation {
     0% {
         stroke: #4CAF50;
-        stroke-dashoffset: var(--path-length);
+        stroke-dashoffset: 1000;
     }
     100% {
         stroke: #2196F3;
         stroke-dashoffset: 0;
     }
 }
-
-        .flowing {
-            stroke-dasharray: 1000;
-            animation: flowAnimation 2s ease-out forwards;
-        }
 
         .completion-modal {
             display: none;
@@ -969,62 +969,36 @@ function animateFlow(path) {
     const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     overlay.classList.add('solution-overlay');
     
-    // Calculate cell size
     const cellSize = container.querySelector('.cell').offsetWidth;
-    overlay.setAttribute('viewBox', `0 0 ${GRID_WIDTH * cellSize} ${GRID_HEIGHT * cellSize}`);
-    overlay.style.width = `${GRID_WIDTH * cellSize}px`;
-    overlay.style.height = `${GRID_HEIGHT * cellSize}px`;
+    const gridPadding = 10; // From CSS
     
-    // Create the path data
+    overlay.setAttribute('viewBox', `0 0 ${GRID_WIDTH * cellSize} ${GRID_HEIGHT * cellSize}`);
+    
     let pathData = '';
     path.forEach((pos, index) => {
         const x = pos.x * cellSize + cellSize/2;
         const y = pos.y * cellSize + cellSize/2;
-        pathData += index === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+        
+        if (index === 0) {
+            pathData += `M ${x} ${y}`;
+        } else {
+            pathData += ` L ${x} ${y}`;
+        }
     });
     
     const flowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     flowPath.setAttribute('d', pathData);
     flowPath.classList.add('solution-path');
-    
-    // Set up the animation
-    const pathLength = flowPath.getTotalLength ? flowPath.getTotalLength() : 1000;
-    overlay.style.setProperty('--path-length', pathLength);
-    
-    // Calculate dynamic duration based on grid size
-    const duration = getFlowAnimationDuration();
-    
-    // Add animation styles
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes flowAnimation {
-            0% {
-                stroke: #4CAF50;
-                stroke-dashoffset: ${pathLength};
-            }
-            100% {
-                stroke: #2196F3;
-                stroke-dashoffset: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    flowPath.style.strokeDasharray = pathLength;
-    flowPath.style.strokeDashoffset = pathLength;
-    flowPath.style.animation = `flowAnimation ${duration}s ease-out forwards`;
+    flowPath.classList.add('flowing');
     
     overlay.appendChild(flowPath);
     container.appendChild(overlay);
     
     return new Promise(resolve => {
-        flowPath.addEventListener('animationend', () => {
-            setTimeout(() => {
-                overlay.remove();
-                style.remove();
-                resolve();
-            }, 500);
-        });
+        setTimeout(() => {
+            overlay.remove();
+            resolve();
+        }, 2500); // Match this with your animation duration
     });
 }
 
@@ -1116,21 +1090,73 @@ function animateFlow(path) {
 async function checkSolution() {
     console.log("Checking solution...");
     
-    const path = validatePipePath();
+    // Create a direct path without backtracking
+    let path = [];
+    const seen = new Set();
     
-    if (path) {
-        // Show the success animation
-        await animateFlow(path);
+    // Add start position
+    path.push(startPos);
+    seen.add(`${startPos.x},${startPos.y}`);
+    
+    // Add each solution point, but only if we haven't seen it before
+    for (let pipe of solution) {
+        const key = `${pipe.x},${pipe.y}`;
+        if (!seen.has(key)) {
+            path.push({x: pipe.x, y: pipe.y});
+            seen.add(key);
+        }
+    }
+    
+    // Add end position if not already included
+    const endKey = `${endPos.x},${endPos.y}`;
+    if (!seen.has(endKey)) {
+        path.push(endPos);
+    }
+
+    console.log("Checking path:", path.map(pos => `(${pos.x},${pos.y})`));
+    
+    let isValid = true;
+    for (let i = 0; i < path.length - 1; i++) {
+        const current = path[i];
+        const next = path[i + 1];
         
-        // Update game state
+        const currentPipe = (current.x === startPos.x && current.y === startPos.y) ? 
+            null : grid[current.y][current.x];
+        const nextPipe = (next.x === endPos.x && next.y === endPos.y) ? 
+            null : grid[next.y][next.x];
+            
+        const dx = next.x - current.x;
+        const dy = next.y - current.y;
+        
+        // Skip connection check for start and end positions
+        if ((current.x === startPos.x && current.y === startPos.y) ||
+            (next.x === endPos.x && next.y === endPos.y)) {
+            continue;
+        }
+        
+        // Check if pipes are properly connected
+        if (!currentPipe || !nextPipe || !pipeConnects(currentPipe, nextPipe, dx, dy)) {
+            console.log(`Failed connection at (${current.x},${current.y}) to (${next.x},${next.y})`);
+            isValid = false;
+            break;
+        }
+    }
+
+    if (isValid) {
+        // Remove any existing overlay before showing new animation
+        const existingOverlay = document.querySelector('.solution-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+
+        // Show the animation
+        await animateFlow(path);
         levelsCompleted++;
         showStarCelebration();
         
-        // Show completion modal
         const modal = document.getElementById('completionModal');
         modal.style.display = 'block';
         
-        // Set up next level
         document.getElementById('nextLevelButton').onclick = () => {
             modal.style.display = 'none';
             
