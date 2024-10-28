@@ -89,7 +89,19 @@
             transition: transform 0.2s ease;
         }
 
+        cell {
+    cursor: pointer;
+    touch-action: manipulation; /* Allow native touch behaviors but prevent zoom */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
 
+.grid {
+    touch-action: none; /* Prevent scrolling on the grid itself */
+    position: relative;
+    z-index: 1;
+}
 
 .cell {
     aspect-ratio: 1; /* Keeps cells square */
@@ -113,6 +125,16 @@
     box-shadow: 0 0 10px rgba(255,255,255,0.1);
     transition: all 0.2s ease;
 }
+
+.cell.touched {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: scale(0.95);
+        transition: all 0.2s ease;
+    }
+
+    .cell svg {
+        pointer-events: none; /* Prevent SVG from capturing events */
+    }
 
         .pipe {
             width: 100%;
@@ -421,35 +443,55 @@ function updateGridDisplay() {
                 const pipe = grid[y][x];
                 cell.appendChild(createSVGPipe(pipe.type, pipe.rotation));
                 
-                // Add both click and touch handlers
-                cell.addEventListener('click', () => rotatePipe(x, y));
+                // Add a visual feedback class when touched
+                const addTouchFeedback = () => {
+                    cell.classList.add('touched');
+                    setTimeout(() => cell.classList.remove('touched'), 200);
+                };
+
+                // Handle both touch and click events
+                const handleInteraction = (e) => {
+                    e.preventDefault(); // Prevent any default behavior
+                    console.log('Cell interaction detected', {x, y}); // Debug log
+                    addTouchFeedback();
+                    rotatePipe(x, y);
+                };
+
+                // Click handler for desktop
+                cell.addEventListener('click', handleInteraction);
                 
-                // New touch handling
-                let touchStartTime;
-                let hasMoved = false;
-                
+                // Touch handlers for mobile
+                let touchStartTime = 0;
+                let touchStartX = 0;
+                let touchStartY = 0;
+                const SWIPE_THRESHOLD = 30;
+
                 cell.addEventListener('touchstart', (e) => {
-                    touchStartTime = new Date().getTime();
-                    hasMoved = false;
-                    handleTouchStart(e, x, y);
+                    touchStartTime = Date.now();
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    console.log('Touch start on cell:', {x, y}); // Debug log
                 }, { passive: true });
-                
-                cell.addEventListener('touchmove', () => {
-                    hasMoved = true;
-                }, { passive: true });
-                
+
                 cell.addEventListener('touchend', (e) => {
-                    const touchEndTime = new Date().getTime();
-                    const touchDuration = touchEndTime - touchStartTime;
-                    
-                    // If it was a quick tap without movement, rotate the pipe
-                    if (!hasMoved && touchDuration < 250) {
-                        e.preventDefault();
-                        rotatePipe(x, y);
-                    } else {
-                        handleTouchEnd(e);
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    const touchDuration = Date.now() - touchStartTime;
+                    const xDiff = Math.abs(touchEndX - touchStartX);
+                    const yDiff = Math.abs(touchEndY - touchStartY);
+
+                    console.log('Touch end on cell:', {
+                        x, y,
+                        duration: touchDuration,
+                        xDiff,
+                        yDiff
+                    }); // Debug log
+
+                    // If it's a quick tap without much movement
+                    if (touchDuration < 300 && xDiff < SWIPE_THRESHOLD && yDiff < SWIPE_THRESHOLD) {
+                        handleInteraction(e);
                     }
-                });
+                }, { passive: false });
             }
             
             gridElement.appendChild(cell);
@@ -1172,7 +1214,33 @@ document.addEventListener('touchend', (function() {
 
  
                         let lastTouchEnd = 0;
+                        
+                        const existingHandlers = document.querySelectorAll('[data-touch-handler]');
+existingHandlers.forEach(handler => handler.remove());
 
+// Add only essential global touch handling
+document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// Clear any existing touchend handlers and add just one
+const existingTouchEndHandlers = document.querySelectorAll('[data-touchend-handler]');
+existingTouchEndHandlers.forEach(handler => handler.remove());
+
+// Debug logging for touch events at document level
+document.addEventListener('touchstart', (e) => {
+    console.log('Document touchstart:', {
+        target: e.target.className,
+        touches: e.touches.length
+    });
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    console.log('Document touchend:', {
+        target: e.target.className,
+        touches: e.touches.length
+    });
+}, { passive: true });
 
                         // document.addEventListener('touchmove', function(e) {
                         //     if (e.touches.length > 1) {
