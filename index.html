@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PipeDreams</title>
+    <meta name="description" content="Connect pipes to guide water from start to finish in this challenging puzzle game!">
+    <style>
+        body, html {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            touch-action: none;
+        }
+
+        #startMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        #startMenu button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4a90e2;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #instructions {
+            text-align: center;
+            max-width: 80%;
+            margin-bottom: 20px;
+        }
+
+        .game-container {
+            position: relative;
+            margin: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 2px;
+            background: #2a2a4a;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: #3a3a5a;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+
+
+.cell {
+    aspect-ratio: 1; /* Keeps cells square */
+    width: auto; /* Let grid control the size */
+    min-width: 30px; /* Minimum size for usability */
+    background: #3a3a5a;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+} */
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        .pipe {
+            width: 100%;
+            height: 100%;
+        }
+
+        .start {
+            background: #4CAF50;
+        }
+
+        .end {
+            background: #f44336;
+        }
+
+        .solution-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .solution-path {
+            fill: none;
+            stroke: #ffeb3b;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.5));
+        }
+
+        @keyframes flowAnimation {
+            0% {
+                stroke: #4CAF50;
+                stroke-dashoffset: 1000;
+            }
+            100% {
+                stroke: #2196F3;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .flowing {
+            stroke-dasharray: 1000;
+            animation: flowAnimation 2s ease-out forwards;
+        }
+
+        .completion-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(74, 144, 226, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .completion-modal h2 {
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .completion-modal button {
+            margin-top: 15px;
+            background: #2a2a4a;
+        }
+
+        #levelInfo {
+            text-align: center;
+            margin: 10px;
+            font-size: 20px;
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #4a90e2;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        @media (max-width: 400px) {
+            .cell {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="startMenu">
+        <div id="instructions">
+            <h1>Flow Pipes</h1>
+            <p>Connect the pipes from the green start to the red end.</p>
+            <p>Tap/click tiles to rotate pipes.</p>
+            <p>Create a continuous path to win!</p>
+        </div>
+        <button id="startButton">Ready!</button>
+    </div>
+
+    <div id="levelInfo">Level 1</div>
+    <div class="game-container">
+        <div class="grid" id="grid">
+            <!-- Grid will be populated by JavaScript -->
+        </div>
+    </div>
+    <div id="controls">
+        <button id="checkButton">Check Solution</button>
+        <button id="resetButton">Reset Level</button>
+    </div>
+
+    <div class="completion-modal" id="completionModal">
+        <h2>Congratulations!</h2>
+        <p>You solved the puzzle!</p>
+        <button id="nextLevelButton">Next Level</button>
+    </div>
+
+    <script>
+        let GRID_WIDTH = 6;
+let GRID_HEIGHT = 6;
+let levelsCompleted = 0;
+const LEVELS_PER_EXPANSION = 3;
+
+        const PIPE_TYPES = {
+            STRAIGHT: 0,
+            CORNER: 1,
+            EMPTY: 2
+        };
+
+        const DIRECTIONS = [
+            { x: 0, y: -1 }, // Up
+            { x: 1, y: 0 },  // Right
+            { x: 0, y: 1 },  // Down
+            { x: -1, y: 0 }  // Left
+        ];
+
+        let currentLevel = 1;
+        let grid = [];
+        let startPos = { x: 0, y: 0 };
+        let endPos = { x: 5, y: 5 };
+        let solution = [];
+        let startTaps = 0;
+        let solutionTimeout = null;
+        let touchStartX = null;
+        let touchStartY = null;
+        let touchedCell = null;
+
+        function getDebugInfo(x, y) {
+    if (x === startPos.x && y === startPos.y) return "START";
+    if (x === endPos.x && y === endPos.y) return "END";
+    
+    const pipe = grid[y][x];
+    if (!pipe) return "EMPTY";
+    
+    return `${pipe.type === PIPE_TYPES.STRAIGHT ? 'S' : 'C'}@${pipe.rotation}°`;
+}
+
+        function handleTouchStart(e, x, y) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchedCell = {x, y};
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchStartX || !touchStartY || !touchedCell) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            // Minimum swipe distance
+            const minSwipeDistance = 30;
+
+            // Check if it's a start or end position
+            if (touchedCell.x === startPos.x && touchedCell.y === startPos.y) return;
+            if (touchedCell.x === endPos.x && touchedCell.y === endPos.y) return;
+
+            // Determine swipe direction
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (Math.abs(deltaX) > minSwipeDistance) {
+                    shiftRow(touchedCell.y, deltaX > 0 ? 1 : -1);
+                }
+            } else {
+                // Vertical swipe
+                if (Math.abs(deltaY) > minSwipeDistance) {
+                    shiftColumn(touchedCell.x, deltaY > 0 ? 1 : -1);
+                }
+            }
+
+            touchStartX = null;
+            touchStartY = null;
+            touchedCell = null;
+        }
+
+        function shiftRow(row, direction) {
+            const newRow = [...grid[row]];
+            if (direction > 0) {
+                // Shift right
+                const last = newRow.pop();
+                newRow.unshift(last);
+            } else {
+                // Shift left
+                const first = newRow.shift();
+                newRow.push(first);
+            }
+            grid[row] = newRow;
+            updateGridDisplay();
+            checkCorrectPipes();
+        }
+
+        function shiftColumn(col, direction) {
+            const column = grid.map(row => row[col]);
+            if (direction > 0) {
+                // Shift down
+                const last = column.pop();
+                column.unshift(last);
+            } else {
+                // Shift up
+                const first = column.shift();
+                column.push(first);
+            }
+            grid.forEach((row, i) => {
+                row[col] = column[i];
+            });
+            updateGridDisplay();
+            checkCorrectPipes();
+        }
+
+        function updateGridSize() {
+    const grid = document.querySelector('.grid');
+    grid.style.gridTemplateColumns = `repeat(${GRID_WIDTH}, 1fr)`;
+}
+
+function showStarCelebration() {
+    const celebration = document.createElement('div');
+    celebration.style.position = 'fixed';
+    celebration.style.top = '20%';
+    celebration.style.left = '50%';
+    celebration.style.transform = 'translateX(-50%)';
+    celebration.style.fontSize = '2em';
+    celebration.style.textAlign = 'center';
+    celebration.style.zIndex = '1000';
+    celebration.style.animation = 'fadeInOut 2s ease-in-out';
+    
+    // Show stars for completed levels
+    const stars = '⭐'.repeat(levelsCompleted % LEVELS_PER_EXPANSION);
+    celebration.innerHTML = `
+        ${stars}<br>
+        ${levelsCompleted % LEVELS_PER_EXPANSION === 0 ? 
+        '🎮 Get ready for a bigger challenge! 🎮' : 
+        `${LEVELS_PER_EXPANSION - (levelsCompleted % LEVELS_PER_EXPANSION)} more levels until expansion!`}
+    `;
+
+    document.body.appendChild(celebration);
+    
+    // Add the animation style if it doesn't exist
+    if (!document.querySelector('#celebrationStyle')) {
+        const style = document.createElement('style');
+        style.id = 'celebrationStyle';
+        style.textContent = `
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+                10% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+                20% { transform: translateX(-50%) scale(1); }
+                80% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    setTimeout(() => celebration.remove(), 2000);
+}
+
+        function updateGridDisplay() {
+            const gridElement = document.getElementById('grid');
+            gridElement.innerHTML = '';
+            
+            for (let y = 0; y < GRID_WIDTH; y++) {
+                for (let x = 0; x < GRID_HEIGHT; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (x === startPos.x && y === startPos.y) {
+                        cell.classList.add('start');
+                        cell.addEventListener('click', handleStartClick);
+                    } else if (x === endPos.x && y === endPos.y) {
+                        cell.classList.add('end');
+                    } else {
+                        const pipe = grid[y][x];
+                        cell.appendChild(createSVGPipe(pipe.type, pipe.rotation));
+                        
+                        cell.addEventListener('click', () => rotatePipe(x, y));
+                        cell.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            handleTouchStart(e, x, y);
+                        });
+                    }
+                    
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        function createSVGPipe(type, rotation) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.classList.add("pipe");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    if (type === PIPE_TYPES.STRAIGHT) {
+        path.setAttribute("d", "M40,0 V100 M60,0 V100");
+    } else if (type === PIPE_TYPES.CORNER) {
+        // Changed the corner pipe drawing to match rotation labels
+        // Original was: "M40,0 V60 H100 M60,0 V40 H100"
+        // We'll flip it to: "M0,40 H60 V100 M0,60 H40 V100"
+        path.setAttribute("d", "M0,40 H60 V100 M0,60 H40 V100");
+    }
+    path.setAttribute("stroke", "#6a6a8a");
+    path.setAttribute("stroke-width", "20");
+    path.setAttribute("class", "pipe-path");
+    svg.appendChild(path);
+
+    svg.style.transform = `rotate(${rotation}deg)`;
+    return svg;
+}
+
+
+
+
+function generateSolution() {
+    solution = [];
+    let current = { ...startPos };
+    let visited = new Set();
+    let path = [];
+    let prev = null;
+
+    // Add start position to visited set using string key
+    visited.add(`${current.x},${current.y}`);
+    path.push(current);
+    
+    while (current.x !== endPos.x || current.y !== endPos.y) {
+        // Get all possible moves (only orthogonal)
+        let possibleMoves = DIRECTIONS
+            .map((dir, index) => ({
+                x: current.x + dir.x,
+                y: current.y + dir.y,
+                direction: index
+            }))
+            .filter(pos => 
+                pos.x >= 0 && pos.x < GRID_WIDTH &&
+                pos.y >= 0 && pos.y < GRID_HEIGHT &&
+                !visited.has(`${pos.x},${pos.y}`)  // use string key for visited check
+            );
+
+        if (possibleMoves.length === 0) {
+            return false;  // No valid moves, try again
+        }
+
+        let nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        visited.add(`${nextMove.x},${nextMove.y}`);
+        
+        if (prev) {
+            let dx1 = current.x - prev.x;
+            let dy1 = current.y - prev.y;
+            let dx2 = nextMove.x - current.x;
+            let dy2 = nextMove.y - current.y;
+            
+            let pipeType, rotation;
+            
+            if ((dx1 === 0 && dx2 === 0) || (dy1 === 0 && dy2 === 0)) {
+                // Straight pipe
+                pipeType = PIPE_TYPES.STRAIGHT;
+                rotation = dx1 === 0 ? 0 : 90;  // 0 for vertical, 90 for horizontal
+            } else {
+                // Corner pipe
+                pipeType = PIPE_TYPES.CORNER;
+                
+                // Coming from left, going up
+                if ((dx1 === 1 && dy2 === -1) || (dx2 === -1 && dy1 === 1)) {
+                    rotation = 90;  // top-left corner
+                }
+                // Coming from right, going up
+                else if ((dx1 === -1 && dy2 === -1) || (dx2 === 1 && dy1 === 1)) {
+                    rotation = 180;  // top-right corner
+                }
+                // Coming from right, going down
+                else if ((dx1 === -1 && dy2 === 1) || (dx2 === 1 && dy1 === -1)) {
+                    rotation = 270;  // bottom-right corner
+                }
+                // Coming from left, going down
+                else {
+                    rotation = 0;  // bottom-left corner
+                }
+            }
+            
+            solution.push({
+                x: current.x,
+                y: current.y,
+                type: pipeType,
+                rotation: rotation
+            });
+        }
+        
+        prev = current;
+        current = { x: nextMove.x, y: nextMove.y };
+        path.push(current);
+    }
+    
+    // Add final pipe
+    let dx = current.x - prev.x;
+    let dy = current.y - prev.y;
+    solution.push({
+        x: current.x,
+        y: current.y,
+        type: PIPE_TYPES.STRAIGHT,
+        rotation: dx === 0 ? 0 : 90  // vertical if moving vertically, horizontal if moving horizontally
+    });
+
+    console.log("Generated path:", path.map(pos => `(${pos.x},${pos.y})`));
+    
+    return true;
+}
+
+        function showSolutionPath() {
+            const container = document.querySelector('.game-container');
+            const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            overlay.classList.add('solution-overlay');
+            
+            // Calculate cell size and offset
+            const cellSize = container.querySelector('.cell').offsetWidth;
+            const gridPadding = 10; // From CSS
+            
+            overlay.setAttribute('viewBox', `0 0 ${GRID_WIDTH * cellSize} ${GRID_HEIGHT * cellSize}`);
+            
+            let pathData = '';
+            solution.forEach((pipe, index) => {
+                const x = pipe.x * cellSize + cellSize/2;
+                const y = pipe.y * cellSize + cellSize/2;
+                
+                if (index === 0) {
+                    pathData += `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            });
+            
+            // Add final point (end position)
+            const endX = endPos.x * cellSize + cellSize/2;
+            const endY = endPos.y * cellSize + cellSize/2;
+            pathData += ` L ${endX} ${endY}`;
+            
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('d', pathData);
+            path.classList.add('solution-path');
+            
+            overlay.appendChild(path);
+            container.appendChild(overlay);
+            
+            // Remove after 6 seconds
+            if (solutionTimeout) {
+                clearTimeout(solutionTimeout);
+            }
+            solutionTimeout = setTimeout(() => {
+                overlay.remove();
+            }, 6000);
+        }
+
+        function handleStartClick() {
+            startTaps++;
+            if (startTaps === 6) {
+                showSolutionPath();
+                startTaps = 0;
+            }
+        }
+
+        function initializeGrid() {
+    const gridElement = document.getElementById('grid');
+    startTaps = 0;
+    gridElement.innerHTML = '';
+    grid = [];
+    
+    // Update end position based on new grid size
+    endPos = { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 };
+
+    // Generate a valid solution
+    while (!generateSolution()) {
+        // Keep trying until we get a valid solution
+    }
+
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+        grid[y] = [];
+        for (let x = 0; x < GRID_WIDTH; x++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            
+            if (x === startPos.x && y === startPos.y) {
+                cell.classList.add('start');
+                cell.addEventListener('click', handleStartClick);
+            } else if (x === endPos.x && y === endPos.y) {
+                cell.classList.add('end');
+            } else {
+                const solutionPipe = solution.find(p => p.x === x && p.y === y);
+                let pipeType, rotation;
+                
+                if (solutionPipe) {
+                    pipeType = solutionPipe.type;
+                    rotation = Math.floor(Math.random() * 4) * 90;
+                } else {
+                    pipeType = Math.random() < 0.5 ? PIPE_TYPES.STRAIGHT : PIPE_TYPES.CORNER;
+                    rotation = Math.floor(Math.random() * 4) * 90;
+                }
+                
+                grid[y][x] = { 
+    type: pipeType, 
+    rotation: rotation,
+    touched: false  // Add this property
+};
+                cell.appendChild(createSVGPipe(pipeType, rotation));
+                
+                cell.addEventListener('click', () => rotatePipe(x, y));
+                
+                // Add touch event listeners for swipe
+                cell.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleTouchStart(e, x, y);
+                });
+                cell.addEventListener('touchend', handleTouchEnd);
+            }
+            
+            gridElement.appendChild(cell);
+        }
+    }
+    checkCorrectPipes();
+}
+
+
+
+// function rotatePipe(x, y) {
+//     const cell = grid[y][x];
+//     if (cell) {
+//         cell.touched = true;  // Add this line
+//         cell.rotation = (cell.rotation + 90) % 360;
+//         const gridElement = document.getElementById('grid');
+//         const cellElement = gridElement.children[y * GRID_WIDTH + x];
+//         const svg = cellElement.querySelector('svg');
+//         svg.style.transform = `rotate(${cell.rotation}deg)`;
+        
+//         // Show debug info
+//         const info = getDebugInfo(x, y);
+//         document.getElementById('levelInfo').textContent = 
+//             `Level ${currentLevel} (${x},${y}): ${info}`;
+        
+//         checkCorrectPipes();
+//     }
+// }
+
+function rotatePipe(x, y) {
+    const cell = grid[y][x];
+    if (cell) {
+        cell.touched = true;
+        cell.rotation = (cell.rotation + 90) % 360;
+        const gridElement = document.getElementById('grid');
+        const cellElement = gridElement.children[y * GRID_WIDTH + x];
+        const svg = cellElement.querySelector('svg');
+        svg.style.transform = `rotate(${cell.rotation}deg)`;
+       
+        // This is the debug info we used - you can comment it out
+        /* if (cell.type === PIPE_TYPES.CORNER) {
+            let pipeType = '';
+            switch(cell.rotation) {
+                case 0: pipeType = 'bottom-left'; break;
+                case 90: pipeType = 'top-left'; break;
+                case 180: pipeType = 'top-right'; break;
+                case 270: pipeType = 'bottom-right'; break;
+            }
+            document.getElementById('levelInfo').textContent = 
+                `Level ${currentLevel} ${GRID_WIDTH}x${GRID_HEIGHT}`; 
+        } */
+       
+        // Just show the level number instead
+        document.getElementById('levelInfo').textContent = `Level ${currentLevel}`;
+        
+        checkCorrectPipes();
+    }
+}
+
+function checkCorrectPipes() {
+    const gridElement = document.getElementById('grid');
+    
+    // Reset all pipes to default color
+    document.querySelectorAll('.pipe-path').forEach(path => {
+        path.setAttribute('stroke', '#6a6a8a');
+    });
+    
+    solution.forEach(pipe => {
+        if ((pipe.x === startPos.x && pipe.y === startPos.y) ||
+            (pipe.x === endPos.x && pipe.y === endPos.y)) {
+            return;
+        }
+
+        const currentPipe = grid[pipe.y][pipe.x];
+        
+        if (currentPipe && currentPipe.touched) {  // Add touched check here
+            let isCorrect = false;
+            
+            if (currentPipe.type === PIPE_TYPES.STRAIGHT) {
+                const isSolutionVertical = pipe.rotation === 0 || pipe.rotation === 180;
+                const isCurrentVertical = currentPipe.rotation === 0 || currentPipe.rotation === 180;
+                isCorrect = isSolutionVertical === isCurrentVertical;
+            } else {
+                isCorrect = currentPipe.rotation === pipe.rotation;
+            }
+            
+            if (isCorrect) {
+                const cellElement = gridElement.children[pipe.y * GRID_WIDTH + pipe.x];
+                const pipePath = cellElement.querySelector('.pipe-path');
+                if (pipePath) {
+                    pipePath.setAttribute('stroke', '#4CAF50');
+                }
+            }
+        }
+    });
+}
+
+// Helper function to get pipe connections based on rotation
+function getCornerConnections(rotation) {
+    switch(rotation) {
+        case 0:   return ['right', 'down'];
+        case 90:  return ['down', 'left'];
+        case 180: return ['left', 'up'];
+        case 270: return ['up', 'right'];
+        default:  return [];
+    }
+}
+
+// Helper function to check if two sets of connections are the same
+function areConnectionsSame(conn1, conn2) {
+    // Sort the connections to make comparison easier
+    const sorted1 = [...conn1].sort().join(',');
+    const sorted2 = [...conn2].sort().join(',');
+    return sorted1 === sorted2;
+}
+
+    function validatePipePath() {
+    let current = { ...startPos };
+    let visited = new Set(`${startPos.x},${startPos.y}`);
+    let path = [current];
+    
+    while (true) {
+        let nextPos = null;
+        const currentPipe = grid[current.y][current.x];
+        
+        let connections = [];
+        if (currentPipe) {
+            if (currentPipe.type === PIPE_TYPES.STRAIGHT) {
+                if (currentPipe.rotation === 0 || currentPipe.rotation === 180) {
+                    connections = [{ x: 0, y: -1 }, { x: 0, y: 1 }];
+                } else {
+                    connections = [{ x: -1, y: 0 }, { x: 1, y: 0 }];
+                }
+            } else if (currentPipe.type === PIPE_TYPES.CORNER) {
+                switch(currentPipe.rotation) {
+                    case 0: connections = [{ x: 0, y: 1 }, { x: 1, y: 0 }]; break;    // bottom-right
+                    case 90: connections = [{ x: 0, y: -1 }, { x: 1, y: 0 }]; break;  // top-right
+                    case 180: connections = [{ x: 0, y: -1 }, { x: -1, y: 0 }]; break; // top-left
+                    case 270: connections = [{ x: 0, y: 1 }, { x: -1, y: 0 }]; break;  // bottom-left
+                }
+            }
+        }
+                
+                // Try each possible connection
+                for (let conn of connections) {
+            const newPos = { x: current.x + conn.x, y: current.y + conn.y };
+            if (newPos.x >= 0 && newPos.x < GRID_WIDTH &&     // Changed from GRID_SIZE
+    newPos.y >= 0 && newPos.y < GRID_HEIGHT &&    // Changed from GRID_SIZE
+    !visited.has(`${newPos.x},${newPos.y}`)) {
+                
+                // Check if pipes connect properly
+                const nextPipe = grid[newPos.y][newPos.x];
+                if (nextPipe) {
+                    let isConnected = false;
+                    if (nextPipe.type === PIPE_TYPES.STRAIGHT) {
+                        if (conn.x === 0 && (nextPipe.rotation === 0 || nextPipe.rotation === 180)) isConnected = true;
+                        if (conn.y === 0 && (nextPipe.rotation === 90 || nextPipe.rotation === 270)) isConnected = true;
+                    } else if (nextPipe.type === PIPE_TYPES.CORNER) {
+                        const dx = -conn.x;
+                        const dy = -conn.y;
+                        switch(nextPipe.rotation) {
+                            case 0: isConnected = (dy === -1 || dx === -1); break;   // bottom-right
+                            case 90: isConnected = (dy === 1 || dx === -1); break;   // top-right
+                            case 180: isConnected = (dy === 1 || dx === 1); break;   // top-left
+                            case 270: isConnected = (dy === -1 || dx === 1); break;  // bottom-left
+                        }
+                    }
+                    if (isConnected) {
+                        nextPos = newPos;
+                        visited.add(`${nextPos.x},${nextPos.y}`);
+                        path.push(nextPos);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!nextPos) break;
+        current = nextPos;
+        
+        if (current.x === endPos.x && current.y === endPos.y) {
+            return path;
+        }
+    }
+    return null;
+}
+
+// Add this function to calculate animation duration
+function getFlowAnimationDuration() {
+    // Base duration for 6x6 grid is 2 seconds
+    // Add 0.5 seconds for each additional row/column beyond 6
+    const baseSize = 6;
+    const baseDuration = 2;
+    const additionalTime = Math.max(GRID_WIDTH, GRID_HEIGHT) - baseSize;
+    return baseDuration + (additionalTime * 0.5);
+}
+
+// Modify the animateFlow function to use dynamic duration
+function animateFlow(path) {
+    const container = document.querySelector('.game-container');
+    const overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    overlay.classList.add('solution-overlay');
+    
+    const cellSize = container.querySelector('.cell').offsetWidth;
+    overlay.setAttribute('viewBox', `0 0 ${GRID_WIDTH * cellSize} ${GRID_HEIGHT * cellSize}`);
+    
+    let pathData = '';
+    path.forEach((pos, index) => {
+        const x = pos.x * cellSize + cellSize/2;
+        const y = pos.y * cellSize + cellSize/2;
+        pathData += index === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+    });
+    
+    const flowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    flowPath.setAttribute('d', pathData);
+    flowPath.classList.add('solution-path');
+    
+    // Calculate path length for stroke-dasharray
+    const pathLength = flowPath.getTotalLength ? flowPath.getTotalLength() : 1000;
+    flowPath.style.strokeDasharray = pathLength;
+    flowPath.style.strokeDashoffset = pathLength;
+    
+    // Set animation duration dynamically
+    const duration = getFlowAnimationDuration();
+    flowPath.style.animation = `flowAnimation ${duration}s ease-out forwards`;
+    
+    // Update the @keyframes animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes flowAnimation {
+            0% {
+                stroke: #4CAF50;
+                stroke-dashoffset: ${pathLength};
+            }
+            100% {
+                stroke: #2196F3;
+                stroke-dashoffset: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    overlay.appendChild(flowPath);
+    container.appendChild(overlay);
+    
+    return new Promise(resolve => {
+        flowPath.addEventListener('animationend', () => {
+            setTimeout(() => {
+                overlay.remove();
+                style.remove();  // Clean up the dynamic style
+                resolve();
+            }, 500);
+        });
+    });
+}
+
+async function checkSolution() {
+    console.log("Checking solution...");
+    
+    // Create a direct path without backtracking
+    let path = [];
+    const seen = new Set();
+    
+    // Add start position
+    path.push(startPos);
+    seen.add(`${startPos.x},${startPos.y}`);
+    
+    // Add each solution point, but only if we haven't seen it before
+    for (let pipe of solution) {
+        const key = `${pipe.x},${pipe.y}`;
+        if (!seen.has(key)) {
+            path.push({x: pipe.x, y: pipe.y});
+            seen.add(key);
+        }
+    }
+    
+    // Add end position if not already included
+    const endKey = `${endPos.x},${endPos.y}`;
+    if (!seen.has(endKey)) {
+        path.push(endPos);
+    }
+
+    console.log("Checking path:", path.map(pos => `(${pos.x},${pos.y})`));
+    
+    let isValid = true;
+    for (let i = 0; i < path.length - 1; i++) {
+        const current = path[i];
+        const next = path[i + 1];
+        
+        const currentPipe = (current.x === startPos.x && current.y === startPos.y) ? 
+            null : grid[current.y][current.x];
+        const nextPipe = (next.x === endPos.x && next.y === endPos.y) ? 
+            null : grid[next.y][next.x];
+            
+        const dx = next.x - current.x;
+        const dy = next.y - current.y;
+        
+        // Skip connection check for start and end positions
+        if ((current.x === startPos.x && current.y === startPos.y) ||
+            (next.x === endPos.x && next.y === endPos.y)) {
+            continue;
+        }
+        
+        // Check if pipes are properly connected
+        if (!currentPipe || !nextPipe || !pipeConnects(currentPipe, nextPipe, dx, dy)) {
+            console.log(`Failed connection at (${current.x},${current.y}) to (${next.x},${next.y})`);
+            isValid = false;
+            break;
+        }
+    }
+
+    if (isValid) {
+        await animateFlow(path);
+        levelsCompleted++;
+        showStarCelebration();
+        
+        const modal = document.getElementById('completionModal');
+        modal.style.display = 'block';
+        
+        document.getElementById('nextLevelButton').onclick = () => {
+    modal.style.display = 'none';
+    
+    if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
+        if (levelsCompleted % (LEVELS_PER_EXPANSION * 2) === 0) {
+            GRID_WIDTH++;
+        } else {
+            GRID_HEIGHT++;
+        }
+        updateGridSize();
+    }
+    
+    currentLevel++;
+    document.getElementById('levelInfo').textContent = `Level ${currentLevel}`;
+    applyLevelColors();  // Add this line
+    initializeGrid();
+};
+    } else {
+        alert("Not quite right. Keep trying!");
+    }
+}
+
+function pipeConnects(pipe1, pipe2, dx, dy) {
+    function getConnections(pipe) {
+        if (!pipe) return [];
+        
+        if (pipe.type === PIPE_TYPES.STRAIGHT) {
+            const isVertical = (pipe.rotation % 180) === 0;
+            return isVertical ? ['up', 'down'] : ['left', 'right'];
+        } else if (pipe.type === PIPE_TYPES.CORNER) {
+            // Match rotations from generateSolution:
+            switch(pipe.rotation) {
+                case 0:   return ['down', 'left'];     // bottom-left corner
+                case 90:  return ['up', 'left'];       // top-left corner
+                case 180: return ['up', 'right'];      // top-right corner
+                case 270: return ['down', 'right'];    // bottom-right corner
+                default:  return [];
+            }
+        }
+        return [];
+    }
+
+    // Skip validation for start/end positions
+    if (!pipe1 || !pipe2) return true;
+    
+    const conn1 = getConnections(pipe1);
+    const conn2 = getConnections(pipe2);
+    
+    console.log('Connection check:', {
+        pipe1: `${pipe1.type}@${pipe1.rotation}° [${conn1.join(',')}]`,
+        pipe2: `${pipe2.type}@${pipe2.rotation}° [${conn2.join(',')}]`,
+        dir: `dx=${dx},dy=${dy}`
+    });
+
+    if (dx > 0) return conn1.includes('right') && conn2.includes('left');
+    if (dx < 0) return conn1.includes('left') && conn2.includes('right');
+    if (dy > 0) return conn1.includes('down') && conn2.includes('up');
+    if (dy < 0) return conn1.includes('up') && conn2.includes('down');
+    
+    return false;
+}
+
+function generateLevelColors(level) {
+    // Base hue changes with each level
+    const hue = (level * 37) % 360; // Using 37 to get a nice color spread
+    
+    // Every 5th level, create a contrasting scheme
+    const isContrastLevel = level % 5 === 0;
+    
+    if (isContrastLevel) {
+        // Contrasting colors (opposite on color wheel)
+        return {
+            background: `hsl(${hue}, 25%, 15%)`,  // Dark background
+            gridBg: `hsl(${(hue + 180) % 360}, 30%, 20%)`,  // Complementary, slightly lighter
+            pipeBg: `hsl(${hue}, 35%, 25%)`,  // Cell background
+            pipeColor: `hsl(${(hue + 180) % 360}, 60%, 75%)`,  // Pipe color
+            correctPipeColor: `hsl(${(hue + 120) % 360}, 70%, 60%)` // Success color
+        };
+    } else {
+        // Harmonious colors
+        return {
+            background: `hsl(${hue}, 25%, 15%)`,  // Dark background
+            gridBg: `hsl(${hue}, 30%, 20%)`,  // Slightly lighter
+            pipeBg: `hsl(${hue}, 35%, 25%)`,  // Cell background
+            pipeColor: `hsl(${(hue + 30) % 360}, 60%, 75%)`,  // Slightly shifted hue
+            correctPipeColor: `hsl(${(hue + 120) % 360}, 70%, 60%)` // Success color
+        };
+    }
+}
+
+// Add this function to apply the colors
+function applyLevelColors() {
+    const colors = generateLevelColors(currentLevel);
+    
+    // Create or update the style element
+    let styleEl = document.getElementById('level-colors');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'level-colors';
+        document.head.appendChild(styleEl);
+    }
+    
+    styleEl.textContent = `
+        body {
+            background: ${colors.background};
+            transition: background 0.5s ease;
+        }
+        
+        .grid {
+            background: ${colors.gridBg};
+            transition: background 0.5s ease;
+        }
+        
+        .cell {
+            background: ${colors.pipeBg};
+            transition: background 0.5s ease;
+        }
+        
+        .pipe-path {
+            stroke: ${colors.pipeColor};
+            transition: stroke 0.5s ease;
+        }
+        
+        .pipe-path[stroke="#4CAF50"] {
+            stroke: ${colors.correctPipeColor} !important;
+        }
+        
+        .start {
+            background: ${colors.correctPipeColor};
+            transition: background 0.5s ease;
+        }
+        
+        .end {
+            background: ${colors.pipeColor};
+            transition: background 0.5s ease;
+        }
+    `;
+}
+
+document.getElementById('startButton').addEventListener('click', () => {
+    document.getElementById('startMenu').style.display = 'none';
+    applyLevelColors();  // Add this line
+    initializeGrid();
+});
+
+        document.getElementById('checkButton').addEventListener('click', checkSolution);
+        document.getElementById('resetButton').addEventListener('click', initializeGrid);
+
+        // Prevent default touch behavior
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+
+ 
+                        let lastTouchEnd = 0;
+
+                        document.addEventListener('touchstart', function(e) {
+                            if (e.touches.length > 1) {
+                                e.preventDefault();
+                            }
+                        }, { passive: false });
+
+                        document.addEventListener('touchend', function(e) {
+                            const now = (new Date()).getTime();
+                            if (now - lastTouchEnd <= 300) {
+                                e.preventDefault();
+                            }
+                            lastTouchEnd = now;
+                        }, false);
+
+                        document.addEventListener('touchmove', function(e) {
+                            if (e.touches.length > 1) {
+                                e.preventDefault();
+                            }
+                        }, { passive: false });
+                    </script></body></html>
