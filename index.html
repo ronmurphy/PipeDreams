@@ -89,13 +89,7 @@
             transition: transform 0.2s ease;
         }
 
-        cell {
-    cursor: pointer;
-    touch-action: manipulation; /* Allow native touch behaviors but prevent zoom */
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
-}
+
 
 .grid {
     touch-action: none; /* Prevent scrolling on the grid itself */
@@ -104,6 +98,11 @@
 }
 
 .cell {
+        cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
     aspect-ratio: 1; /* Keeps cells square */
     width: auto; /* Let grid control the size */
     min-width: 30px; /* Minimum size for usability */
@@ -126,15 +125,16 @@
     transition: all 0.2s ease;
 }
 
-.cell.touched {
-        background-color: rgba(255, 255, 255, 0.2);
-        transform: scale(0.95);
-        transition: all 0.2s ease;
-    }
 
-    .cell svg {
-        pointer-events: none; /* Prevent SVG from capturing events */
-    }
+.cell.touched {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.cell svg {
+    pointer-events: none;
+}
 
         .pipe {
             width: 100%;
@@ -671,7 +671,8 @@ function generateSolution() {
             }
         }
 
-        function initializeGrid() {
+        // Replace the cell touch handling section in initializeGrid with this:
+function initializeGrid() {
     const gridElement = document.getElementById('grid');
     startTaps = 0;
     gridElement.innerHTML = '';
@@ -709,20 +710,61 @@ function generateSolution() {
                 }
                 
                 grid[y][x] = { 
-    type: pipeType, 
-    rotation: rotation,
-    touched: false  // Add this property
-};
+                    type: pipeType, 
+                    rotation: rotation,
+                    touched: false
+                };
                 cell.appendChild(createSVGPipe(pipeType, rotation));
                 
-                cell.addEventListener('click', () => rotatePipe(x, y));
-                
-                // Add touch event listeners for swipe
-                cell.addEventListener('touchstart', (e) => {
+                // Add a visual feedback class when touched
+                const addTouchFeedback = () => {
+                    cell.classList.add('touched');
+                    setTimeout(() => cell.classList.remove('touched'), 200);
+                };
+
+                // Handle both touch and click events
+                const handleInteraction = (e) => {
                     e.preventDefault();
-                    handleTouchStart(e, x, y);
+                    console.log('Cell interaction detected', {x, y});
+                    addTouchFeedback();
+                    rotatePipe(x, y);
+                };
+
+                // Click handler for desktop
+                cell.addEventListener('click', handleInteraction);
+                
+                // Touch handlers for mobile
+                let touchStartTime = 0;
+                let touchStartX = 0;
+                let touchStartY = 0;
+                const SWIPE_THRESHOLD = 30;
+
+                cell.addEventListener('touchstart', (e) => {
+                    touchStartTime = Date.now();
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    console.log('Touch start on cell:', {x, y});
+                }, { passive: true });
+
+                cell.addEventListener('touchend', (e) => {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    const touchDuration = Date.now() - touchStartTime;
+                    const xDiff = Math.abs(touchEndX - touchStartX);
+                    const yDiff = Math.abs(touchEndY - touchStartY);
+
+                    console.log('Touch end on cell:', {
+                        x, y,
+                        duration: touchDuration,
+                        xDiff,
+                        yDiff
+                    });
+
+                    // If it's a quick tap without much movement
+                    if (touchDuration < 300 && xDiff < SWIPE_THRESHOLD && yDiff < SWIPE_THRESHOLD) {
+                        handleInteraction(e);
+                    }
                 });
-                cell.addEventListener('touchend', handleTouchEnd);
             }
             
             gridElement.appendChild(cell);
@@ -1214,7 +1256,7 @@ document.addEventListener('touchend', (function() {
 
  
                         let lastTouchEnd = 0;
-                        
+
                         const existingHandlers = document.querySelectorAll('[data-touch-handler]');
 existingHandlers.forEach(handler => handler.remove());
 
