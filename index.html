@@ -376,22 +376,22 @@
         opacity: 0.9;
     }
 
-    #achievements-button {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(74, 144, 226, 0.3);
-        border: none;
-        border-radius: 5px;
-        padding: 8px 12px;
-        color: white;
-        cursor: pointer;
-        transition: background 0.3s ease;
-    }
+    #achievementsButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #4a90e2;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
 
-    #achievements-button:hover {
-        background: rgba(74, 144, 226, 0.5);
-    }
+#achievementsButton:hover {
+    background: #357abd;
+}
 
     #achievements-modal {
         display: none;
@@ -424,6 +424,23 @@
         opacity: 1;
     }
 
+    #achievementsButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #4a90e2;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    #achievementsButton:hover {
+        background: #357abd;
+    }
+
     </style>
 </head>
 <body>
@@ -433,7 +450,6 @@
             <p>Connect the pipes from the top-left start to the bottom-right end.</p>
             <p>Tap/click tiles to rotate pipes.</p>
             <p>Create a continuous path to win!</p>
-            <p>Pipes will change color when aligned correctly.</p>
         </div>
         <button id="startButton">Ready!</button>
     </div>
@@ -449,7 +465,7 @@
         </div>
     </div>
     <div id="controls">
-        <button id="checkButton">Check Solution</button>
+        <button id="achievementsButton">🏆 Achievements</button>
         <button id="resetButton">Reset Level</button>
     </div>
 
@@ -593,20 +609,106 @@ const newEffects = [
         }
     },
     {
-        name: 'geometric-pattern',
+        name: 'floating-particles',
         create: () => {
             const bg = document.createElement('div');
             bg.className = 'bg-effect';
+            
+            const particles = Array.from({ length: 15 }, (_, i) => {
+                const size = Math.random() * 3 + 1;
+                const delay = Math.random() * 5;
+                const duration = 15 + Math.random() * 10;
+                
+                return `
+                    radial-gradient(circle at ${Math.random() * 100}% ${Math.random() * 100}%,
+                        rgba(255,255,255,${0.02 + Math.random() * 0.03}) 0%,
+                        transparent ${size}px)
+                `;
+            }).join(',');
+            
             bg.style.cssText = `
-                background-image: 
-                    linear-gradient(30deg, rgba(255,255,255,0.02) 1px, transparent 1px),
-                    linear-gradient(-30deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-                background-size: 50px 50px;
-                animation: geometricSpin 30s linear infinite;
+                background-image: ${particles};
+                animation: particleFloat 20s ease-in-out infinite;
+                opacity: 0.7;
             `;
+
+            // Add the necessary animation if not already present
+            if (!document.querySelector('#particleAnimation')) {
+                const style = document.createElement('style');
+                style.id = 'particleAnimation';
+                style.textContent = `
+                    @keyframes particleFloat {
+                        0%, 100% { 
+                            transform: translate(0, 0) scale(1); 
+                            opacity: 0.7;
+                        }
+                        25% { 
+                            transform: translate(10px, -10px) scale(1.05); 
+                            opacity: 0.9;
+                        }
+                        50% { 
+                            transform: translate(0, -20px) scale(1.1); 
+                            opacity: 0.7;
+                        }
+                        75% { 
+                            transform: translate(-10px, -10px) scale(1.05); 
+                            opacity: 0.9;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
             return bg;
         }
     },
+    {
+    name: 'geometric-pattern',
+    create: () => {
+        const bg = document.createElement('div');
+        bg.className = 'bg-effect';
+        bg.style.cssText = `
+            background-image:
+                linear-gradient(30deg, rgba(255,255,255,0.03) 1px, transparent 2px),
+                linear-gradient(-30deg, rgba(255,255,255,0.03) 1px, transparent 2px);
+            background-size: 80px 80px;
+            background-position: center center;
+            background-repeat: repeat;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            animation: geometricSpin 30s linear infinite;
+            transform-origin: center center;
+        `;
+
+        // Add the animation if it doesn't exist
+        if (!document.querySelector('#geometricAnimation')) {
+            const style = document.createElement('style');
+            style.id = 'geometricAnimation';
+            style.textContent = `
+                @keyframes geometricSpin {
+                    0% {
+                        transform: rotate(0deg) scale(1);
+                        opacity: 0.7;
+                    }
+                    50% {
+                        transform: rotate(180deg) scale(1.1);
+                        opacity: 0.9;
+                    }
+                    100% {
+                        transform: rotate(360deg) scale(1);
+                        opacity: 0.7;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        return bg;
+    }
+},
     {
         name: 'light-beams',
         create: () => {
@@ -663,6 +765,7 @@ const newEffects = [
             return bg;
         }
     }
+
 ];
 
 // Add the new effects to your existing array
@@ -779,12 +882,6 @@ const additionalAchievements = {
         desc: "Play 50 levels total",
         icon: "🌟",
         earned: false
-    },
-    cheatFinder: {
-        title: "Secret Finder",
-        desc: "Found the solution preview by tapping the start point",
-        icon: "🔍",
-        earned: false
     }
 };
 
@@ -820,6 +917,8 @@ function loadGameProgress() {
     }
     return null;
 }
+
+//🏆
 
 function updateStartMenu() {
     const startMenu = document.getElementById('startMenu');
@@ -862,6 +961,8 @@ function updateStartMenu() {
             </div>
         `;
     }
+
+    
 
     // Add styles for the menu and achievements
     const style = document.createElement('style');
@@ -1022,17 +1123,49 @@ function updateStartMenu() {
     }
 }
 
-function showAchievementsPanel() {
-    const modal = document.createElement('div');
-    modal.id = 'achievementsModal';
+// function showAchievementsPanel() {
+//     const modal = document.createElement('div');
+//     modal.id = 'achievementsModal';
     
+//     const earnedCount = Object.values(achievements).filter(a => a.earned).length;
+//     const totalCount = Object.values(achievements).length;
+    
+//     modal.innerHTML = `
+//         <h2 style="text-align: center; margin-bottom: 10px;">Achievements</h2>
+//         <div style="text-align: center; margin-bottom: 20px;">
+//             ${earnedCount} / ${totalCount} Unlocked
+//         </div>
+//         <div class="achievements-list">
+//             ${Object.values(achievements)
+//                 .sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0))
+//                 .map(achievement => `
+//                     <div class="achievement-card ${achievement.earned ? 'earned' : ''}">
+//                         <div class="achievement-icon">${achievement.icon}</div>
+//                         <div class="achievement-details">
+//                             <div class="achievement-title">${achievement.title}</div>
+//                             <div class="achievement-desc">${achievement.desc}</div>
+//                         </div>
+//                     </div>
+//                 `).join('')}
+//         </div>
+//         <button class="close-button" onclick="this.parentElement.remove()">Close</button>
+//     `;
+    
+//     document.body.appendChild(modal);
+//     modal.style.display = 'block';
+// }
+
+function showAchievementsPanel() {
     const earnedCount = Object.values(achievements).filter(a => a.earned).length;
     const totalCount = Object.values(achievements).length;
     
+    const modal = document.createElement('div');
+    modal.id = 'achievementsModal';
+    
     modal.innerHTML = `
-        <h2 style="text-align: center; margin-bottom: 10px;">Achievements</h2>
-        <div style="text-align: center; margin-bottom: 20px;">
-            ${earnedCount} / ${totalCount} Unlocked
+        <div class="achievements-header">
+            <h2>Achievements</h2>
+            <div class="achievement-count">${earnedCount} / ${totalCount} Unlocked</div>
         </div>
         <div class="achievements-list">
             ${Object.values(achievements)
@@ -1044,11 +1177,87 @@ function showAchievementsPanel() {
                             <div class="achievement-title">${achievement.title}</div>
                             <div class="achievement-desc">${achievement.desc}</div>
                         </div>
+                        ${achievement.earned ? '<div class="earned-star">⭐</div>' : ''}
                     </div>
                 `).join('')}
         </div>
         <button class="close-button" onclick="this.parentElement.remove()">Close</button>
     `;
+    
+    // Add some enhanced styling
+    const style = document.createElement('style');
+    style.textContent = `
+        .achievements-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .achievement-count {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .achievement-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .achievement-card.earned {
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .achievement-card:hover {
+            transform: translateX(5px);
+        }
+
+        .earned-star {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+
+        .achievement-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .close-button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background: #4a90e2;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .close-button:hover {
+            background: #357abd;
+        }
+    `;
+    document.head.appendChild(style);
     
     document.body.appendChild(modal);
     modal.style.display = 'block';
@@ -1061,6 +1270,7 @@ function continueSavedGame(savedGame) {
     GRID_HEIGHT = savedGame.gridHeight;
     document.getElementById('startMenu').style.display = 'none';
     applyLevelColors();
+    updateBackground();
     updateGridSize();
     initializeGrid();
 }
@@ -1072,6 +1282,7 @@ function startNewGame() {
     GRID_HEIGHT = 6;
     document.getElementById('startMenu').style.display = 'none';
     applyLevelColors();
+    updateBackground();  // Add background effect when starting new game
     initializeGrid();
 }
 
@@ -1170,11 +1381,11 @@ function loadAchievements() {
 
 // Add achievements button and modal
 function addAchievementsButton() {
-    const button = document.createElement('button');
-    button.id = 'achievements-button';
-    button.innerHTML = '🏆';
-    button.onclick = showAchievementsModal;
-    document.body.appendChild(button);
+    // const button = document.createElement('button');
+    // button.id = 'achievements-button';
+    // button.innerHTML = '🏆';
+    // button.onclick = showAchievementsModal;
+    // document.body.appendChild(button);
 }
 
 function showAchievementsModal() {
@@ -1214,17 +1425,31 @@ function addBackgroundEffect() {
         currentBackground.remove();
     }
 
+    // Log available effects
+    console.log('Available background effects:', backgroundEffects.map(e => e.name));
+    
     // Select a random effect
-    const effect = backgroundEffects[Math.floor(Math.random() * backgroundEffects.length)];
+    const randomIndex = Math.floor(Math.random() * backgroundEffects.length);
+    const effect = backgroundEffects[randomIndex];
+    
+    // Log the chosen effect
+    console.log('Selected background effect:', {
+        name: effect.name,
+        index: randomIndex,
+        totalEffects: backgroundEffects.length
+    });
     
     // Create and add the new background
     currentBackground = effect.create();
     document.body.appendChild(currentBackground);
-
-    // Log the chosen effect (for debugging)
-    console.log('Applied background effect:', effect.name);
 }
 
+// Also let's verify the effects array is properly populated
+console.log('\nVerifying background effects:', {
+    totalOriginalEffects: backgroundEffects.length - newEffects.length,
+    totalNewEffects: newEffects.length,
+    allEffectNames: backgroundEffects.map(e => e.name)
+});
 // Call this when starting a new level
 function updateBackground() {
     if (currentBackground) {
@@ -1469,29 +1694,42 @@ function updateGridDisplay() {
     }
 }
 
-        function createSVGPipe(type, rotation) {
+function createSVGPipe(type, rotation) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 100 100");
     svg.classList.add("pipe");
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    
     if (type === PIPE_TYPES.STRAIGHT) {
+        // Vertical by default (0 degrees)
         path.setAttribute("d", "M40,0 V100 M60,0 V100");
+        svg.style.transform = `rotate(${rotation}deg)`;
     } else if (type === PIPE_TYPES.CORNER) {
-        // Changed the corner pipe drawing to match rotation labels
-        // Original was: "M40,0 V60 H100 M60,0 V40 H100"
-        // We'll flip it to: "M0,40 H60 V100 M0,60 H40 V100"
-        path.setAttribute("d", "M0,40 H60 V100 M0,60 H40 V100");
+        // Explicitly define each corner orientation without relying on rotation
+        switch(rotation) {
+            case 0: // bottom-right
+                path.setAttribute("d", "M0,60 H60 V0 M0,40 H40 V0");
+                break;
+            case 90: // top-right
+                path.setAttribute("d", "M0,40 H60 V100 M0,60 H40 V100");
+                break;
+            case 180: // top-left
+                path.setAttribute("d", "M100,40 H40 V100 M100,60 H60 V100");
+                break;
+            case 270: // bottom-left
+                path.setAttribute("d", "M100,60 H40 V0 M100,40 H60 V0");
+                break;
+        }
     }
+    
     path.setAttribute("stroke", "#6a6a8a");
     path.setAttribute("stroke-width", "20");
     path.setAttribute("class", "pipe-path");
+    
     svg.appendChild(path);
-
-    svg.style.transform = `rotate(${rotation}deg)`;
     return svg;
 }
-
 
 
 
@@ -1502,23 +1740,20 @@ function generateSolution() {
     let path = [];
     let prev = null;
 
-    // Add start position to visited set using string key
+    // Add start position to visited set
     visited.add(`${current.x},${current.y}`);
     path.push(current);
     
     while (current.x !== endPos.x || current.y !== endPos.y) {
         // Get all possible moves (only orthogonal)
-        let possibleMoves = DIRECTIONS
-            .map((dir, index) => ({
-                x: current.x + dir.x,
-                y: current.y + dir.y,
-                direction: index
-            }))
-            .filter(pos => 
-                pos.x >= 0 && pos.x < GRID_WIDTH &&
-                pos.y >= 0 && pos.y < GRID_HEIGHT &&
-                !visited.has(`${pos.x},${pos.y}`)  // use string key for visited check
-            );
+        let possibleMoves = [
+            { x: current.x + 1, y: current.y, direction: "right" },
+            { x: current.x, y: current.y + 1, direction: "down" }
+        ].filter(pos => 
+            pos.x >= 0 && pos.x < GRID_WIDTH &&
+            pos.y >= 0 && pos.y < GRID_HEIGHT &&
+            !visited.has(`${pos.x},${pos.y}`)
+        );
 
         if (possibleMoves.length === 0) {
             return false;  // No valid moves, try again
@@ -1540,25 +1775,18 @@ function generateSolution() {
                 pipeType = PIPE_TYPES.STRAIGHT;
                 rotation = dx1 === 0 ? 0 : 90;  // 0 for vertical, 90 for horizontal
             } else {
-                // Corner pipe
+                // Corner pipe - use our new rotation values
                 pipeType = PIPE_TYPES.CORNER;
                 
-                // Coming from left, going up
-                if ((dx1 === 1 && dy2 === -1) || (dx2 === -1 && dy1 === 1)) {
-                    rotation = 90;  // top-left corner
-                }
-                // Coming from right, going up
-                else if ((dx1 === -1 && dy2 === -1) || (dx2 === 1 && dy1 === 1)) {
-                    rotation = 180;  // top-right corner
-                }
-                // Coming from right, going down
-                else if ((dx1 === -1 && dy2 === 1) || (dx2 === 1 && dy1 === -1)) {
-                    rotation = 270;  // bottom-right corner
-                }
-                // Coming from left, going down
-                else {
-                    rotation = 0;  // bottom-left corner
-                }
+                // Determine corner orientation based on connection directions
+                if (dx1 === 1 && dy2 === 1) rotation = 90;      // left to down
+                else if (dx2 === 1 && dy1 === 1) rotation = 0;  // down to right
+                else if (dx1 === 1 && dy2 === -1) rotation = 270; // left to up
+                else if (dx2 === 1 && dy1 === -1) rotation = 180; // up to right
+                else if (dx1 === -1 && dy2 === 1) rotation = 180; // right to down
+                else if (dx2 === -1 && dy1 === 1) rotation = 270; // down to left
+                else if (dx1 === -1 && dy2 === -1) rotation = 90; // right to up
+                else rotation = 0;                               // up to left
             }
             
             solution.push({
@@ -1581,11 +1809,9 @@ function generateSolution() {
         x: current.x,
         y: current.y,
         type: PIPE_TYPES.STRAIGHT,
-        rotation: dx === 0 ? 0 : 90  // vertical if moving vertically, horizontal if moving horizontally
+        rotation: dx === 0 ? 0 : 90
     });
 
-    console.log("Generated path:", path.map(pos => `(${pos.x},${pos.y})`));
-    
     return true;
 }
 
@@ -1657,8 +1883,8 @@ function updateLevelInfo() {
 }
 
         // Replace the cell touch handling section in initializeGrid with this:
-function initializeGrid() {
-    moveCount = 0; // Reset move counter
+        function initializeGrid() {
+    moveCount = 0;
     updateMoveCounter();
     startLevelTimer();
     const gridElement = document.getElementById('grid');
@@ -1672,6 +1898,7 @@ function initializeGrid() {
     // Generate a valid solution
     while (!generateSolution()) {
         // Keep trying until we get a valid solution
+        console.log("Regenerating solution...");
     }
 
     updateLevelInfo();
@@ -1692,9 +1919,11 @@ function initializeGrid() {
                 let pipeType, rotation;
                 
                 if (solutionPipe) {
+                    // Use the solution pipe type but randomize rotation
                     pipeType = solutionPipe.type;
                     rotation = Math.floor(Math.random() * 4) * 90;
                 } else {
+                    // For non-solution pipes, create random ones
                     pipeType = Math.random() < 0.5 ? PIPE_TYPES.STRAIGHT : PIPE_TYPES.CORNER;
                     rotation = Math.floor(Math.random() * 4) * 90;
                 }
@@ -1702,7 +1931,8 @@ function initializeGrid() {
                 grid[y][x] = { 
                     type: pipeType, 
                     rotation: rotation,
-                    touched: false
+                    touched: false,
+                    isColored: false
                 };
                 cell.appendChild(createSVGPipe(pipeType, rotation));
                 
@@ -1760,36 +1990,201 @@ function initializeGrid() {
             gridElement.appendChild(cell);
         }
     }
+    
+    // Initial pipe check
     checkCorrectPipes();
 
-    // check hours for achevements
+    // Check hours for achievements
     const hour = new Date().getHours();
     if (hour < 9) checkAchievements();
     if (hour >= 22) checkAchievements();
+    
+    debugGrid();
 }
 
+// Add this helper function to check if a pipe should trigger a reset
+function shouldResetProgress(x, y) {
+    const pipe = grid[y][x];
+    return pipe && pipe.isColored;
+}
 
+function getPipeDescription(pipe) {
+    if (!pipe) return 'no pipe';
+    
+    if (pipe.type === PIPE_TYPES.STRAIGHT) {
+        return pipe.rotation === 0 || pipe.rotation === 180 ? 'vertical' : 'horizontal';
+    } else {
+        switch(pipe.rotation) {
+            case 0:   return 'corner: bottom-right (→↓)';
+            case 90:  return 'corner: top-right (→↑)';
+            case 180: return 'corner: top-left (←↑)';
+            case 270: return 'corner: bottom-left (←↓)';
+            default:  return 'unknown orientation';
+        }
+    }
+}
+
+function getPipeConnections(pipe) {
+    if (!pipe) return [];
+    
+    if (pipe.type === PIPE_TYPES.STRAIGHT) {
+        const isVertical = pipe.rotation === 0 || pipe.rotation === 180;
+        const connections = isVertical 
+            ? [{dx: 0, dy: -1}, {dx: 0, dy: 1}]  // vertical
+            : [{dx: -1, dy: 0}, {dx: 1, dy: 0}]; // horizontal
+        console.log(`Straight pipe ${pipe.rotation}°: ${isVertical ? 'vertical ↑↓' : 'horizontal ←→'}`);
+        return connections;
+    } else { // CORNER
+        // Match connections to the exact SVG paths
+        switch(pipe.rotation) {
+            case 0:   // bottom-right: "M0,60 H60 V0 M0,40 H40 V0"
+                console.log('Corner pipe 0°: connects left and up ←↑');
+                return [
+                    {dx: -1, dy: 0},  // connects left (M0,-)
+                    {dx: 0, dy: -1}   // connects up (V0)
+                ];
+                
+            case 90:  // top-right: "M0,40 H60 V100 M0,60 H40 V100"
+                console.log('Corner pipe 90°: connects left and down ←↓');
+                return [
+                    {dx: -1, dy: 0},  // connects left (M0,-)
+                    {dx: 0, dy: 1}    // connects down (V100)
+                ];
+                
+            case 180: // top-left: "M100,40 H40 V100 M100,60 H60 V100"
+                console.log('Corner pipe 180°: connects right and down →↓');
+                return [
+                    {dx: 1, dy: 0},   // connects right (M100,-)
+                    {dx: 0, dy: 1}    // connects down (V100)
+                ];
+                
+            case 270: // bottom-left: "M100,60 H40 V0 M100,40 H60 V0"
+                console.log('Corner pipe 270°: connects right and up →↑');
+                return [
+                    {dx: 1, dy: 0},   // connects right (M100,-)
+                    {dx: 0, dy: -1}   // connects up (V0)
+                ];
+                
+            default:
+                console.error('Invalid rotation:', pipe.rotation);
+                return [];
+        }
+    }
+}
+
+// Helper function to get all connected neighbors from a point
+function getConnectedNeighbors(x, y) {
+    const pipe = grid[y][x];
+    if (!pipe) return [];
+    
+    const connections = [];
+    const pipeConnections = getPipeConnections(pipe);
+    
+    for (const conn of pipeConnections) {
+        const nextX = x + conn.dx;
+        const nextY = y + conn.dy;
+        
+        if (nextX >= 0 && nextX < GRID_WIDTH && 
+            nextY >= 0 && nextY < GRID_HEIGHT) {
+            const nextPipe = grid[nextY][nextX];
+            if (!nextPipe) continue;
+            
+            const nextConnections = getPipeConnections(nextPipe);
+            if (nextConnections.some(nc => nc.dx === -conn.dx && nc.dy === -conn.dy)) {
+                connections.push({x: nextX, y: nextY});
+            }
+        }
+    }
+    
+    return connections;
+}
+
+function isConnectedToColored(x, y) {
+    const currentPipe = grid[y][x];
+    if (!currentPipe) return false;
+    
+    const connections = getPipeConnections(currentPipe);
+    
+    for (const conn of connections) {
+        const nextX = x + conn.dx;
+        const nextY = y + conn.dy;
+        
+        // Check bounds
+        if (nextX < 0 || nextX >= GRID_WIDTH || nextY < 0 || nextY >= GRID_HEIGHT) {
+            continue;
+        }
+        
+        // Special case for start position
+        if (nextX === startPos.x && nextY === startPos.y) {
+            return true;
+        }
+        
+        const nextPipe = grid[nextY][nextX];
+        if (!nextPipe || !nextPipe.isColored) continue;
+        
+        // Check if next pipe connects back
+        const nextConnections = getPipeConnections(nextPipe);
+        if (nextConnections.some(nc => nc.dx === -conn.dx && nc.dy === -conn.dy)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 function rotatePipe(x, y) {
     const cell = grid[y][x];
     if (cell) {
+        const oldRotation = cell.rotation;
         cell.touched = true;
         cell.rotation = (cell.rotation + 90) % 360;
+        
+        console.log(`\n=== Rotating Pipe at (${x},${y}) ===`);
+        console.log(`- Previous rotation: ${oldRotation}°`);
+        console.log(`- New rotation: ${cell.rotation}°`);
+        console.log(`- Pipe type: ${cell.type === PIPE_TYPES.STRAIGHT ? 'straight' : 'corner'}`);
+        
+        // Update visual representation
         const gridElement = document.getElementById('grid');
         const cellElement = gridElement.children[y * GRID_WIDTH + x];
         const svg = cellElement.querySelector('svg');
-        svg.style.transform = `rotate(${cell.rotation}deg)`;
-       
-        // Increment and display move count
+        
+        // Remove old SVG and create new one to ensure clean rotation
+        const newSvg = createSVGPipe(cell.type, cell.rotation);
+        cellElement.removeChild(svg);
+        cellElement.appendChild(newSvg);
+        
         moveCount++;
         updateMoveCounter();
-        
-        // Use updateLevelInfo instead of directly setting textContent
-        updateLevelInfo();
         
         checkCorrectPipes();
     }
 }
+
+function debugGrid() {
+    // console.log("\n=== Grid State ===");
+    // for (let y = 0; y < GRID_HEIGHT; y++) {
+    //     let row = "";
+    //     for (let x = 0; x < GRID_WIDTH; x++) {
+    //         const pipe = grid[y][x];
+    //         if (!pipe) {
+    //             row += "[ ]";
+    //         } else if (pipe.type === PIPE_TYPES.STRAIGHT) {
+    //             row += pipe.rotation === 0 ? "[║]" : "[═]";
+    //         } else {
+    //             switch(pipe.rotation) {
+    //                 case 0:   row += "[╝]"; break; // right and down
+    //                 case 90:  row += "[╗]"; break; // right and up
+    //                 case 180: row += "[╔]"; break; // left and up
+    //                 case 270: row += "[╚]"; break; // left and down
+    //             }
+    //         }
+    //     }
+    //     console.log(row);
+    // }
+}
+
+
 function updateMoveCounter() {
     const counter = document.getElementById('moveCounter');
     if (counter) {
@@ -1800,70 +2195,311 @@ function updateMoveCounter() {
 
 
 function checkCorrectPipes() {
+    // console.log("\n=== Starting Pipe Check ===");
     const gridElement = document.getElementById('grid');
     
     // Reset all pipes to default color
     document.querySelectorAll('.pipe-path').forEach(path => {
         path.setAttribute('stroke', '#6a6a8a');
     });
-    
-    // Loop through the solution path in order
-    for (let i = 0; i < solution.length; i++) {
-        const pipe = solution[i];
-        if ((pipe.x === startPos.x && pipe.y === startPos.y) ||
-            (pipe.x === endPos.x && pipe.y === endPos.y)) {
+
+    // Reset colored state in grid
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+        for (let x = 0; x < GRID_WIDTH; x++) {
+            if (grid[y][x]) {
+                grid[y][x].isColored = false;
+            }
+        }
+    }
+
+    // Color the start position
+    colorPipe(startPos.x, startPos.y, '#4CAF50');
+    if (grid[startPos.y][startPos.x]) {
+        grid[startPos.y][startPos.x].isColored = true;
+    }
+
+    if (validateFullPath()) {
+        console.log("Valid path found!");
+        const modal = document.getElementById('completionModal');
+        modal.style.display = 'block';
+    }
+
+    let queue = [{x: startPos.x, y: startPos.y}];
+    let colored = new Set([`${startPos.x},${startPos.y}`]);
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        const currentPipe = grid[current.y][current.x];
+        
+        // console.log(`\nChecking pipe at (${current.x},${current.y}):`);
+        // console.log(`- Type: ${currentPipe ? (currentPipe.type === PIPE_TYPES.STRAIGHT ? 'straight' : 'corner') : 'none'}`);
+        // console.log(`- Rotation: ${currentPipe ? currentPipe.rotation : 'N/A'}°`);
+        // console.log(`- Orientation: ${currentPipe ? getPipeDescription(currentPipe) : 'N/A'}`);
+        // console.log(`- Is Colored: ${currentPipe ? currentPipe.isColored : 'N/A'}`);
+        // console.log(`- Is Touched: ${currentPipe ? currentPipe.touched : 'N/A'}`);
+
+        // Special handling for start position
+        if (current.x === startPos.x && current.y === startPos.y) {
+            // console.log('- Start position, checking right and down connections');
+            const validNextPositions = [
+                {x: current.x + 1, y: current.y},  // right
+                {x: current.x, y: current.y + 1}   // down
+            ];
+
+            for (const next of validNextPositions) {
+                if (next.x < GRID_WIDTH && next.y < GRID_HEIGHT) {
+                    const nextPipe = grid[next.y][next.x];
+                    if (nextPipe && nextPipe.touched && !colored.has(`${next.x},${next.y}`)) {
+                        const connections = getPipeConnections(nextPipe);
+                        // console.log(`  Checking connection to (${next.x},${next.y}):`);
+                        // console.log(`  - Next pipe orientation: ${getPipeDescription(nextPipe)}`);
+                        
+                        const connects = connections.some(conn => 
+                            (conn.dx === -1 && next.x === current.x + 1) || 
+                            (conn.dy === -1 && next.y === current.y + 1)
+                        );
+                        // console.log(`  - Connects: ${connects}`);
+
+                        if (connects) {
+                            colorPipe(next.x, next.y, '#4CAF50');
+                            nextPipe.isColored = true;
+                            colored.add(`${next.x},${next.y}`);
+                            queue.push(next);
+                        }
+                    }
+                }
+            }
             continue;
         }
 
-        const currentPipe = grid[pipe.y][pipe.x];
+        // For other positions
+        const connections = getPipeConnections(currentPipe);
+        // console.log('Checking connections:', connections.map(c => `(dx:${c.dx}, dy:${c.dy})`));
+
+        for (const conn of connections) {
+            const nextX = current.x + conn.dx;
+            const nextY = current.y + conn.dy;
+
+            if (nextX >= 0 && nextX < GRID_WIDTH && 
+                nextY >= 0 && nextY < GRID_HEIGHT &&
+                !colored.has(`${nextX},${nextY}`)) {
+                
+                const nextPipe = grid[nextY][nextX];
+                // console.log(`\nChecking connection to (${nextX},${nextY}):`);
+                // console.log(`- Next pipe: ${nextPipe ? getPipeDescription(nextPipe) : 'none'}`);
+                // console.log(`- Next pipe touched: ${nextPipe ? nextPipe.touched : 'N/A'}`);
+
+                if (!nextPipe || !nextPipe.touched) continue;
+
+                const nextConnections = getPipeConnections(nextPipe);
+                const connects = nextConnections.some(nc => 
+                    nc.dx === -conn.dx && nc.dy === -conn.dy
+                );
+                console.log(`- Connects back: ${connects}`);
+
+                if (connects) {
+                    colorPipe(nextX, nextY, '#4CAF50');
+                    nextPipe.isColored = true;
+                    colored.add(`${nextX},${nextY}`);
+                    queue.push({x: nextX, y: nextY});
+                }
+            }
+        }
+    }
+
+    // Check if we've reached the end
+    // console.log(`\nPath reaches end: ${colored.has(`${endPos.x},${endPos.y}`)}`);
+    if (colored.has(`${endPos.x},${endPos.y}`)) {
+        const modal = document.getElementById('completionModal');
+        modal.style.display = 'block';
+    }
+}
+
+function checkPathCompletion() {
+    // Start from the start position
+    let queue = [{x: startPos.x, y: startPos.y}];
+    let visited = new Set([`${startPos.x},${startPos.y}`]);
+    
+    while (queue.length > 0) {
+        const current = queue.shift();
         
-        if (currentPipe && currentPipe.touched) {
-            let isCorrect = false;
+        // If we've reached the end position and it's colored, we've found a valid path
+        if (current.x === endPos.x && current.y === endPos.y) {
+            console.log("Valid path found to end!");
+            const modal = document.getElementById('completionModal');
+            modal.style.display = 'block';
+            return true;
+        }
+        
+        // Get the current pipe
+        const currentPipe = grid[current.y][current.x];
+        if (!currentPipe || !currentPipe.isColored) continue;
+        
+        // Get all connections from this pipe
+        const connections = getPipeConnections(currentPipe);
+        
+        // Check each possible connection
+        for (const conn of connections) {
+            const nextX = current.x + conn.dx;
+            const nextY = current.y + conn.dy;
+            const key = `${nextX},${nextY}`;
             
-            if (currentPipe.type === PIPE_TYPES.STRAIGHT) {
-                const isSolutionVertical = pipe.rotation === 0 || pipe.rotation === 180;
-                const isCurrentVertical = currentPipe.rotation === 0 || currentPipe.rotation === 180;
-                isCorrect = isSolutionVertical === isCurrentVertical;
-            } else {
-                isCorrect = currentPipe.rotation === pipe.rotation;
+            // Skip if we've already visited this position or it's out of bounds
+            if (visited.has(key) || 
+                nextX < 0 || nextX >= GRID_WIDTH || 
+                nextY < 0 || nextY >= GRID_HEIGHT) {
+                continue;
             }
             
-            if (isCorrect) {
-                const cellElement = gridElement.children[pipe.y * GRID_WIDTH + pipe.x];
-                const pipePath = cellElement.querySelector('.pipe-path');
-                if (pipePath) {
-                    pipePath.setAttribute('stroke', '#4CAF50');
-                    
-                    // Check the next pipe in the solution path
-                    if (i + 1 < solution.length) {
-                        const nextPipe = solution[i + 1];
-                        const nextGridPipe = grid[nextPipe.y][nextPipe.x];
-                        
-                        if (nextGridPipe) {
-                            let nextCorrect = false;
-                            
-                            if (nextGridPipe.type === PIPE_TYPES.STRAIGHT) {
-                                const isSolutionVertical = nextPipe.rotation === 0 || nextPipe.rotation === 180;
-                                const isCurrentVertical = nextGridPipe.rotation === 0 || nextGridPipe.rotation === 180;
-                                nextCorrect = isSolutionVertical === isCurrentVertical;
-                            } else {
-                                nextCorrect = nextGridPipe.rotation === nextPipe.rotation;
-                            }
-                            
-                            if (nextCorrect) {
-                                const nextCellElement = gridElement.children[nextPipe.y * GRID_WIDTH + nextPipe.x];
-                                const nextPipePath = nextCellElement.querySelector('.pipe-path');
-                                if (nextPipePath) {
-                                    nextPipePath.setAttribute('stroke', '#4CAF50');
-                                }
-                            }
+            // Check if the next pipe exists and is colored
+            const nextPipe = grid[nextY][nextX];
+            if (!nextPipe || !nextPipe.isColored) continue;
+            
+            // Verify the pipes actually connect
+            const nextConnections = getPipeConnections(nextPipe);
+            const connects = nextConnections.some(nc => 
+                nc.dx === -conn.dx && nc.dy === -conn.dy
+            );
+            
+            if (connects) {
+                queue.push({x: nextX, y: nextY});
+                visited.add(key);
+            }
+        }
+    }
+    
+    return false;
+}
+
+// Modify the colorPipe function to check for completion
+function isConnectedToEnd() {
+    // Get all neighbors of the end position
+    const endNeighbors = [
+        {x: endPos.x - 1, y: endPos.y}, // left
+        {x: endPos.x + 1, y: endPos.y}, // right
+        {x: endPos.x, y: endPos.y - 1}, // up
+        {x: endPos.x, y: endPos.y + 1}  // down
+    ].filter(pos => 
+        pos.x >= 0 && pos.x < GRID_WIDTH && 
+        pos.y >= 0 && pos.y < GRID_HEIGHT
+    );
+
+    // Check each neighbor
+    for (const neighbor of endNeighbors) {
+        const neighborPipe = grid[neighbor.y][neighbor.x];
+        if (!neighborPipe || !neighborPipe.isColored) continue;
+
+        // Get the connections from this pipe
+        const connections = getPipeConnections(neighborPipe);
+        
+        // Calculate direction to end
+        const dx = endPos.x - neighbor.x;
+        const dy = endPos.y - neighbor.y;
+
+        // Check if this pipe connects to the end
+        const connectsToEnd = connections.some(conn => 
+            conn.dx === dx && conn.dy === dy
+        );
+
+        if (connectsToEnd) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function colorPipe(x, y, color) {
+    const gridElement = document.getElementById('grid');
+    const cellElement = gridElement.children[y * GRID_WIDTH + x];
+    const pipePath = cellElement.querySelector('.pipe-path');
+    
+    if (pipePath) {
+        pipePath.setAttribute('stroke', color);
+        if (grid[y][x]) {
+            const wasColoredBefore = grid[y][x].isColored;
+            grid[y][x].isColored = (color === '#4CAF50');
+
+            // If this pipe just got colored (wasn't colored before)
+            if (!wasColoredBefore && grid[y][x].isColored) {
+                console.log(`Pipe colored at ${x},${y}`);
+                
+                // Check if any colored pipe connects to the end
+                if (isConnectedToEnd()) {
+                    console.log("Found connection to end!");
+                    handleLevelCompletion();
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// Helper function to validate the entire path from start to end
+function validateFullPath() {
+    let queue = [{x: startPos.x, y: startPos.y}];
+    let visited = new Set([`${startPos.x},${startPos.y}`]);
+    
+    while (queue.length > 0) {
+        const current = queue.shift();
+        
+        // If we're at the start position, add special start connections
+        if (current.x === startPos.x && current.y === startPos.y) {
+            const possibleMoves = [
+                {x: current.x + 1, y: current.y}, // right
+                {x: current.x, y: current.y + 1}  // down
+            ];
+            
+            for (const move of possibleMoves) {
+                if (move.x < GRID_WIDTH && move.y < GRID_HEIGHT) {
+                    const nextPipe = grid[move.y][move.x];
+                    if (nextPipe && nextPipe.isColored) {
+                        const connections = getPipeConnections(nextPipe);
+                        if (connections.some(conn => 
+                            (conn.dx === -1 && move.x === current.x + 1) || 
+                            (conn.dy === -1 && move.y === current.y + 1))) {
+                            queue.push(move);
+                            visited.add(`${move.x},${move.y}`);
                         }
+                    }
+                }
+            }
+            continue;
+        }
+        
+        // For all other positions
+        const currentPipe = grid[current.y][current.x];
+        if (!currentPipe || !currentPipe.isColored) continue;
+        
+        const connections = getPipeConnections(currentPipe);
+        for (const conn of connections) {
+            const nextX = current.x + conn.dx;
+            const nextY = current.y + conn.dy;
+            const key = `${nextX},${nextY}`;
+            
+            // If we've reached the end, we're done
+            if (nextX === endPos.x && nextY === endPos.y) {
+                return true;
+            }
+            
+            if (!visited.has(key) && 
+                nextX >= 0 && nextX < GRID_WIDTH && 
+                nextY >= 0 && nextY < GRID_HEIGHT) {
+                const nextPipe = grid[nextY][nextX];
+                if (nextPipe && nextPipe.isColored) {
+                    const nextConnections = getPipeConnections(nextPipe);
+                    if (nextConnections.some(nc => nc.dx === -conn.dx && nc.dy === -conn.dy)) {
+                        queue.push({x: nextX, y: nextY});
+                        visited.add(key);
                     }
                 }
             }
         }
     }
+    
+    return false;
 }
+
 
 // Helper function to get pipe connections based on rotation
 function getCornerConnections(rotation) {
@@ -2004,7 +2640,69 @@ function animateFlow(path) {
     });
 }
 
+function handleLevelCompletion() {
+    stopLevelTimer();
+    checkAchievements();
+    saveGameProgress(); 
 
+    const completionTime = (Date.now() - levelStartTime) / 1000;
+    if (completionTime < 10) {
+        unlockAchievement('speedRunner');
+    }
+    if (completionTime < 5) {
+        unlockAchievement('speedrunnerElite');
+    }
+
+    // Move-based achievement checks
+    if (moveCount <= 5) {
+        unlockAchievement('quickThinking');
+    }
+
+    // Level progression achievements
+    if (levelsCompleted + 1 >= 10) {
+        unlockAchievement('persistent');
+    }
+    if (levelsCompleted + 1 >= 50) {
+        unlockAchievement('dedication');
+    }
+
+    // Grid size achievement
+    if (GRID_WIDTH >= 10 && GRID_HEIGHT >= 10) {
+        unlockAchievement('gridMaster');
+    }
+
+    // Difficulty achievement
+    const difficulty = calculateLevelDifficulty().length;
+    if (difficulty >= 5) {
+        unlockAchievement('mastermind');
+    }
+
+    levelsCompleted++;
+    showStarCelebration();
+    
+    const modal = document.getElementById('completionModal');
+    modal.style.display = 'block';
+    
+    document.getElementById('nextLevelButton').onclick = () => {
+        stopLevelTimer();
+        modal.style.display = 'none';
+        
+        if (levelsCompleted % LEVELS_PER_EXPANSION === 0) {
+            if (levelsCompleted % (LEVELS_PER_EXPANSION * 2) === 0) {
+                GRID_WIDTH++;
+            } else {
+                GRID_HEIGHT++;
+            }
+            updateGridSize();
+        }
+        
+        currentLevel++;
+        updateLevelInfo();
+        applyLevelColors();
+        updateBackground();
+        initializeGrid();
+    };
+}
 
 async function checkSolution() {
     console.log("Checking solution...");
@@ -2258,7 +2956,8 @@ document.getElementById('startButton').addEventListener('click', () => {
     initializeGrid();
 });
 
-        document.getElementById('checkButton').addEventListener('click', checkSolution);
+        // document.getElementById('checkButton').addEventListener('click', checkSolution);
+        document.getElementById('achievementsButton').addEventListener('click', showAchievementsPanel);
         document.getElementById('resetButton').addEventListener('click', initializeGrid);
 
         // Prevent default touch behavior
@@ -2314,6 +3013,11 @@ document.addEventListener('touchend', (e) => {
 }, { passive: true });
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    const achievementsButton = document.getElementById('achievementsButton');
+    if (achievementsButton) {
+        achievementsButton.addEventListener('click', showAchievementsPanel);
+    }
     updateStartMenu();
     
     // Check for veteran achievement
