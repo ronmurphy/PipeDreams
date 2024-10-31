@@ -1197,7 +1197,14 @@
                     }
                 });
             } else {
-                document.getElementById('startButton').addEventListener('click', startNewGame);
+                document.getElementById('startButton').addEventListener('click', () => {
+                    console.log('Game starting');
+                    document.getElementById('startMenu').style.display = 'none';
+                    initializeGameBoard();  // This will trigger the calculations
+                    applyLevelColors();
+                    updateBackground();
+                    initializeGrid();
+                });
             }
 
             if (hasAchievements) {
@@ -1314,30 +1321,46 @@
             modal.style.display = 'block';
         }
 
+
+
         function continueSavedGame(savedGame) {
+            console.log('Continuing saved game');
             currentLevel = savedGame.level;
             levelsCompleted = savedGame.levelsCompleted;
-            GRID_WIDTH = savedGame.gridWidth;
-            GRID_HEIGHT = savedGame.gridHeight;
+
+            const maxSize = calculateMaxGridSize();
+            console.log('Max size for continued game:', maxSize);
+
+            GRID_WIDTH = Math.min(savedGame.gridWidth, maxSize.maxWidth);
+            GRID_HEIGHT = Math.min(savedGame.gridHeight, maxSize.maxHeight);
+
             document.getElementById('startMenu').style.display = 'none';
             applyLevelColors();
-            updateBackground();
             updateGridSize();
             initializeGrid();
         }
 
+
+
         function startNewGame() {
+            console.log('Starting new game');
+            const maxSize = calculateMaxGridSize();
+            console.log('Initial max size for new game:', maxSize);
+
+            // Set initial grid size based on device constraints
             currentLevel = 1;
             levelsCompleted = 0;
-            GRID_WIDTH = 6;
-            GRID_HEIGHT = 6;
+            GRID_WIDTH = Math.min(6, maxSize.maxWidth);  // Start with standard 6x6 or smaller if needed
+            GRID_HEIGHT = Math.min(6, maxSize.maxHeight);
+
+            console.log('Initial grid size:', { width: GRID_WIDTH, height: GRID_HEIGHT });
+
             document.getElementById('startMenu').style.display = 'none';
             applyLevelColors();
-            updateBackground();  // Add background effect when starting new game
+            updateGridSize();
+            updateCellSize();
             initializeGrid();
         }
-
-
 
         function checkAchievements(stats = null) {
             const hour = new Date().getHours();
@@ -3034,35 +3057,85 @@
 
             return {
                 maxWidth: Math.min(maxGridWidth, 12), // Cap at reasonable maximum
-                maxHeight: Math.min(maxGridHeight, 12) // Cap at reasonable maximum
+                maxHeight: Math.min(maxGridHeight, 20) // Cap at reasonable maximum
             };
         }
 
         // Modify the grid expansion logic
+        // function handleGridExpansion() {
+        //     const maxSize = calculateMaxGridSize();
+        //     const expandVertically = GRID_WIDTH >= maxSize.maxWidth;
+
+        //     if (expandVertically) {
+        //         // If we can't expand horizontally anymore, try vertical expansion
+        //         if (GRID_HEIGHT < maxSize.maxHeight) {
+        //             GRID_HEIGHT++;
+        //             return true;
+        //         }
+        //     } else {
+        //         // Try horizontal expansion first
+        //         if (GRID_WIDTH < maxSize.maxWidth) {
+        //             GRID_WIDTH++;
+        //             return true;
+        //         } else if (GRID_HEIGHT < maxSize.maxHeight) {
+        //             // If we can't expand horizontally, try vertical
+        //             GRID_HEIGHT++;
+        //             return true;
+        //         }
+        //     }
+
+        //     return false; // Cannot expand further
+        // }
+
         function handleGridExpansion() {
             const maxSize = calculateMaxGridSize();
+            console.log('Handling grid expansion:', {
+                currentWidth: GRID_WIDTH,
+                currentHeight: GRID_HEIGHT,
+                maxSize,
+                levelsCompleted
+            });
+
             const expandVertically = GRID_WIDTH >= maxSize.maxWidth;
 
             if (expandVertically) {
                 // If we can't expand horizontally anymore, try vertical expansion
                 if (GRID_HEIGHT < maxSize.maxHeight) {
+                    console.log('Expanding vertically:', GRID_HEIGHT + 1);
                     GRID_HEIGHT++;
                     return true;
                 }
             } else {
                 // Try horizontal expansion first
                 if (GRID_WIDTH < maxSize.maxWidth) {
+                    console.log('Expanding horizontally:', GRID_WIDTH + 1);
                     GRID_WIDTH++;
                     return true;
                 } else if (GRID_HEIGHT < maxSize.maxHeight) {
                     // If we can't expand horizontally, try vertical
+                    console.log('Switching to vertical expansion:', GRID_HEIGHT + 1);
                     GRID_HEIGHT++;
                     return true;
                 }
             }
 
-            return false; // Cannot expand further
+            console.log('Cannot expand grid further');
+            return false;
         }
+
+        // Make sure calculateMaxGridSize is called during initialization
+        function initializeGameBoard() {
+            console.log('Initializing game board');
+            const maxSize = calculateMaxGridSize();
+            console.log('Initial max size calculation:', maxSize);
+
+            GRID_WIDTH = Math.min(GRID_WIDTH, maxSize.maxWidth);
+            GRID_HEIGHT = Math.min(GRID_HEIGHT, maxSize.maxHeight);
+            updateGridSize();
+            updateCellSize();
+        }
+
+
 
         // Update the cell size based on grid dimensions
         function updateCellSize() {
@@ -3138,23 +3211,25 @@
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
+                console.log('Window resized, recalculating grid size');
+                const maxSize = calculateMaxGridSize();
+                console.log('New max size after resize:', maxSize);
                 updateCellSize();
             }, 250);
         });
-
         // Call these functions during initial setup
-        function initializeGameBoard() {
-            const maxSize = calculateMaxGridSize();
-            GRID_WIDTH = Math.min(GRID_WIDTH, maxSize.maxWidth);
-            GRID_HEIGHT = Math.min(GRID_HEIGHT, maxSize.maxHeight);
-            updateGridSize();
-            updateCellSize();
-        }
+        // function initializeGameBoard() {
+        //     const maxSize = calculateMaxGridSize();
+        //     GRID_WIDTH = Math.min(GRID_WIDTH, maxSize.maxWidth);
+        //     GRID_HEIGHT = Math.min(GRID_HEIGHT, maxSize.maxHeight);
+        //     updateGridSize();
+        //     updateCellSize();
+        // }
 
-        // Add this to your game initialization
         document.getElementById('startButton').addEventListener('click', () => {
+            console.log('Game starting');
             document.getElementById('startMenu').style.display = 'none';
-            initializeGameBoard();
+            initializeGameBoard();  // This will trigger the calculations
             applyLevelColors();
             updateBackground();
             initializeGrid();
